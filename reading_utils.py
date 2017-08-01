@@ -1,3 +1,12 @@
+"""
+Created on Tuesday, Aug 1st 2017
+
+author: Tansel Baran Yasar
+
+Contains the utilities for reading the data from different file formats created by Intan and Open Ephys
+GUI softwares. 
+"""
+
 import numpy as np
 from load_intan_rhd_format import *
 import os
@@ -5,16 +14,38 @@ import OpenEphys
 import pickle
 
 def read_amplifier_dat_file(filepath):
+    """
+    This function reads the data from a .dat file created by Intan software and returns as a numpy array.
+
+    Inputs:
+        filepath: The path to the .dat file to be read.
+
+    Outputs:
+        amplifier_file: numpy array containing the data from the .dat file (in uV)
+    """
+
     with open(filepath, 'rb') as fid:
         raw_array = np.fromfile(fid, np.int16)
-    amplifier_file = raw_array * 0.195
+    amplifier_file = raw_array * 0.195 #converting from int16 to microvolts
     return amplifier_file
 
 def read_time_dat_file(filepath, sample_rate):
+    """
+    This function reads the time array from a time.dat file created by Intan software for a recording session,
+    and returns the time as a numpy array.
+
+    Inputs:
+        filepath: The path to the time.dat file to be read.
+        sample_rate: Sampling rate for the recording of interest.
+
+    Outputs:
+        time_file: Numpy array containing the time array (in s)
+    """
+
     with open(filepath, 'rb') as fid:
         raw_array = np.fromfile(fid, np.int32)
-    time_file = raw_array / float(sample_rate)
-    return time_file    
+    time_file = raw_array / float(sample_rate) #converting from int32 to seconds
+    return time_file
 
 def read_tetrode(h,s,p):
     """
