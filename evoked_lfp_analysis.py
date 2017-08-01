@@ -1,3 +1,17 @@
+"""
+Uploaded to GitHub on Tuesday, Aug 1st, 2017
+
+author: Tansel Baran Yasar
+
+Contains the code for analyzing the averages, amplitudes, standard errors 
+and temporal trends of the stimulus-evoked LFP response in the recording sessions 
+of an experiment.
+
+Usage: Either run from the LFP analysis Jupyter notebook or standalone from Bash as following:
+	PATHEXP="/path/to/the/folder/that/contains/the/individual/folders/for/all/recording/sessions/"
+	echo $PATHEXP | python evoked_lfp_analysis.py
+"""
+
 import pickle
 import os 
 import numpy as np 
@@ -5,6 +19,7 @@ import math
 from matplotlib.pyplot import *
 from pandas import *
 
+#Read the path to the folder containing all the recording sessions
 mainPath = sys.stdin.read().splitlines()[0]
 print(mainPath)
 dirs = os.listdir(mainPath)
@@ -16,22 +31,23 @@ if not os.path.exists(analyzed_path):
 writer_0 = ExcelWriter(analyzed_path + 'peak_data_probe_0.xlsx', engine = 'xlsxwriter')
 a=0
 
+#Iterating through all recording sessions, while skipping the log and notes files, and 'analyzed' and 'other' folders
+#Please add all the miscallaneous documents, pictures and folders in the 'other' folder 
 for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'analyzed') and (folder != 'other'))):
     p = pickle.load(open(mainPath + folder + '/paramsDict.p', 'rb'))
     if (p['probes'] == 2) and (a == 0):
+	#Creating multiple sheets in the excel output if there are multiple probes
         writer_1 = ExcelWriter(analyzed_path + 'peak_data_probe_1.xlsx', engine = 'xlsxwriter') 
         a = a+1
-    peak_info = {key: {} for key in range(p['probes'])}
-    if p['probe_type'] != 'linear':
-	    raise ValueError('This part of the pipeline supports only linear configuration so far. The script needs to be modified in order to support other configurations')
+	peak_info = {key: {} for key in range(p['probes'])}
 
 	#Make folder for the analysis results of the recording session
     analyzed_path_for_folder = analyzed_path + folder
     if not os.path.exists(analyzed_path_for_folder):
         os.mkdir(analyzed_path_for_folder)
-        
+     
     for probe in range(p['probes']):
-        peak_info[probe]['peak_locs'], peak_info[probe]['peak_locs'], peak_info[probe]['peak_stds'], peak_info[probe]['peak_times'], peak_info[probe]['peak_errs'], peak_info[probe]['peak_amps'] = (np.zeros(p['nr_of_electrodes']) for i in range(6))
+        peak_info[probe]['peak_locs'], peak_info[probe]['peak_stds'], peak_info[probe]['peak_times'], peak_info[probe]['peak_errs'], peak_info[probe]['peak_amps'] = (np.zeros(p['nr_of_electrodes']) for i in range(5))
         for shank in range(p['shanks']):
             #Load the data for the shank
             data = pickle.load(open(mainPath + folder + '/probe_{:g}_shank_{:g}/probe_{:g}_shank_{:g}_evoked.pickle'.format(probe,shank,probe,shank), 'rb'))
