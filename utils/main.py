@@ -13,7 +13,7 @@ from load_intan_rhd_format import *
 from reading_utils import *
 from time import time
 from data_processing_utils import *
-from read_evoked_lfp import read_evoked_lfp
+from LFPutils.read_evoked_lfp import read_evoked_lfp
 import pickle
 
 def main(p):
