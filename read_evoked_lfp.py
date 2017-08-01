@@ -1,3 +1,13 @@
+"""
+Uploaded to Github on Tuesday, Aug 1st, 2017
+
+author: Tansel Baran Yasar
+
+Contains the function for reading the stimulus-evoked LFP for a recording session.
+
+Usage: through the main function in main.py script
+"""
+
 from filtering import *
 from reading_utils import *
 from load_intan_rhd_format import *
@@ -12,11 +22,11 @@ def read_evoked_lfp(coords,p,data):
 	data recorded by Open Ephys software (cont).
 
         Inputs:
-			coords: List including the coordinates of the shank or tetrode (either [height, shank] for tetrode configuration
-		or [probe, shank] for linear configuration
-            p: Dictionary containing parameters (see main file)
-			data: The numpy array that contains the data from either tetrode or shank in cases of tetrode or linear configurations 
-		respectively
+		coords: List including the coordinates of the shank or tetrode (either [height, shank] for tetrode configuration
+			or [probe, shank] for linear configuration
+            	p: Dictionary containing parameters (see main file)
+		data: The numpy array that contains the data from either tetrode or shank in cases of tetrode or linear configurations 
+			respectively
 
         Outputs:
             Saves the evoked LFP waveforms in a numpy array (number of trigger events x number of electrodes per shank x number 
