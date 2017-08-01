@@ -5,7 +5,7 @@ authors: Tansel Baran Yasar and Clemens Dlaska
 
 The main script for performing the spike sorting and LFP analysis on the recording sessions of interest.
 
-Usage: Should be run through the IPython notebooks for spike sorting or LFP analysis. 
+Usage: Should be run through the IPython notebooks for spike sorting or LFP analysis.
 """
 
 import sys
@@ -32,27 +32,28 @@ def main(p):
 ########Read out and Analysis################
 
 #Tetrode
-
+    #Iterating over probes, shanks and tetrodes
     if p['probe_type'] == 'tetrode':
-        for h in range(p['max_nr_of_tetrodes_per_shank']):
-            for s in range(p['shanks']):
-                print('########################  read data from tetrode {:g}{:g} ##############################'.format(h,s))
-                tetrode_file = read_tetrode(h,s,p)
-                if p['spikesorting']:
-                    print('################################### generate prm and prb file for tetrode {:g}{:g} ######################################################'.format(h,s))
-                    create_tetrode_prm_file(h,s,p)
-                    create_tetrode_prb_file(h,s,p)
-                    print('################################## spikesorting, clustering of data in tetrode {:g}{:g} #################################################'.format(h,s))
-                    do_klusta(h,s,p)
-                if p['LFP_analysis']:
-                    print('############################# performing stimulus evoked LFP analysis for tetrode {:g}{:g} ##############################################'.format(h,s))
-                    read_evoked_lfp([h,s],p,tetrode_file)
+        for probe in range(p['probes']):
+            for h in range(p['max_nr_of_tetrodes_per_shank']):
+                for s in range(p['shanks']):
+                    print('########################  read data from tetrode {:g}{:g} ##############################'.format(h,s))
+                    tetrode_file = read_tetrode(probe,h,s,p)
+                    if p['spikesorting']:
+                        print('################################### generate prm and prb file for tetrode {:g}{:g} ######################################################'.format(h,s))
+                        create_tetrode_prm_file(probe,h,s,p)
+                        create_tetrode_prb_file(probe,h,s,p)
+                        print('################################## spikesorting, clustering of data in tetrode {:g}{:g} #################################################'.format(h,s))
+                        do_klusta_for_tetrode(probe,h,s,p)
+                    if p['LFP_analysis']:
+                        print('############################# performing stimulus evoked LFP analysis for tetrode {:g}{:g} ##############################################'.format(h,s))
+                        read_evoked_lfp(probe,[h,s],p,tetrode_file)
 
         t1 = time()
         print('Effort to read and analyze tetrodes: ', t1-t0)
 
 #Linear
-
+    #Iterating over probes and shanks
     elif p['probe_type'] == 'linear':
         for probe in range(p['probes']):
             for s in range(p['shanks']):
