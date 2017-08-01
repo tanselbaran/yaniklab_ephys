@@ -1,14 +1,29 @@
+"""
+Uploaded to Github on Tuesday, Aug 1st 2017
+
+authors: Tansel Baran Yasar and Clemens Dlaska
+
+The main script for performing the spike sorting and LFP analysis on the recording sessions of interest.
+
+Usage: Should be run through the IPython notebooks for spike sorting or LFP analysis. 
+"""
+
 import sys
 from load_intan_rhd_format import *
-from read_probe import *
+from reading_utils import *
 from time import time
 from data_processing_utils import *
-from pylab import *
-from heatmap_plot import *
 from read_evoked_lfp import read_evoked_lfp
 import pickle
 
 def main(p):
+    """
+    This function is the main function for analysis that goes through the steps of the data analysis, based on the parameters and preferences provided in the parameters dictionary.
+
+    Inputs:
+        p: Dictionary of parameters that contains the parameters of recording and preferences regarding the particular mode of data analysis to be used. Usually created via the
+        IPython notebook, "generate_params_dict.ipynb".
+    """
 
     t0 = time()
     print('start')
@@ -21,68 +36,37 @@ def main(p):
     if p['probe_type'] == 'tetrode':
         for h in range(p['max_nr_of_tetrodes_per_shank']):
             for s in range(p['shanks']):
-                print('########################  read tetrode {:g}{:g} ##############################'.format(h,s))
+                print('########################  read data from tetrode {:g}{:g} ##############################'.format(h,s))
                 tetrode_file = read_tetrode(h,s,p)
                 if p['spikesorting']:
-                    print('################################### generate tetrode {:g}{:g} prm and prb file ######################################################'.format(h,s))
+                    print('################################### generate prm and prb file for tetrode {:g}{:g} ######################################################'.format(h,s))
                     create_tetrode_prm_file(h,s,p)
                     create_tetrode_prb_file(h,s,p)
-                    print('############################# spikesorting, clustering of tetrode {:g}{:g} data ################################################'.format(h,s))
+                    print('################################## spikesorting, clustering of data in tetrode {:g}{:g} #################################################'.format(h,s))
                     do_klusta(h,s,p)
                 if p['LFP_analysis']:
+                    print('############################# performing stimulus evoked LFP analysis for tetrode {:g}{:g} ##############################################'.format(h,s))
                     read_evoked_lfp([h,s],p,tetrode_file)
 
-        t2 = time()
-        print('Effort to read and analyze tetrodes: ', t2-t0)
-
-      ########### after first stage of manual clustering generate spikinfo pickle file #########
-        """for h in range(p['shanks']):
-            for s in range(p['max_nr_of_tetrodes_per_shank']):
-                print('################################### generate spikeinfo pickle file for tetrode {:g}{:g}######################################################'.format(h,s))
-                generate_spikeinfo_pickle(h,s,p)"""
+        t1 = time()
+        print('Effort to read and analyze tetrodes: ', t1-t0)
 
 #Linear
 
     elif p['probe_type'] == 'linear':
         for probe in range(p['probes']):
             for s in range(p['shanks']):
-                print('########################  read probe {:g} shank {:g} ##############################'.format(probe,s))
+                print('########################  read data from probe {:g} shank {:g} ##############################'.format(probe,s))
                 shank_file = read_linear(probe,s,p)
                 if p['spikeSorting']:
-                    print('################################### generate probe {:g} shank {:g} prm and prb file ######################################################'.format(probe,s))
+                    print('################################### generate prm and prb file for probe {:g} shank {:g} ######################################################'.format(probe,s))
                     create_shank_prm_file(probe,s,p)
                     create_shank_prb_file(probe,s,p)
-                    print('############################# spikesorting, clustering of probe {:g} shank {:g} data ################################################'.format(probe,s))
+                    print('################################### spikesorting, clustering of probe {:g} shank {:g} data ###################################################'.format(probe,s))
                     do_klusta_for_shank(probe,s,p)
                 if p['LFP_analysis']:
+                    print('################################### performing stimulus evoked LFP analysis for probe {:g} shank {:g} ########################################'.format(probe,s))
                     read_evoked_lfp([probe,s],p,shank_file)
 
-        #generate_spikeinfo_pickle_for_shank(s,p)
-
-#Polytrode
-
-#if p['probe_type'] == 'poly':
-
-####read out shank #####
-
-#print 'start reading out shanks'
-#shank_file, time_file = read_shank(0,p)
-#shank_file_sp = shank_file.transpose().round().astype('int16')
-#shank_file_sp.tofile('shank_ldopa_{:g}.dat'.format(0))
-#print 'shank_ldopa_{:g}'.format(0)
-#t2 = time()
-#print "Effort to read shank: ", t2-t1
-
-#print 'start reading out shanks'
-#save_shank_to_dat(0,p)
-#t2 = time()
-#print "Effort to read shank: ", t2-t1
-
-
-#probe_file, time_file = read_probe(p)
-
-### generate .dat file for klusta spikedetekt
-
-#tetrode_file_sp = tetrode_file.reshape(tetrode_file.shape[1],tetrode_file.shape[0]).flatten()
-
-#tetrode_file_sp.astype('int16').tofile('first_experiment.dat')
+        t1 = time()
+        print('Effort to read and analyze shanks: ', t1-t0)
