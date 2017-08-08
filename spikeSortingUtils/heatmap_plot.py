@@ -4,6 +4,8 @@ Added to GitHub on Tuesday, Aug 1st 2017
 authors: Clemens Dlaska and Tansel Baran Yasar
 
 Contains the source code for generating the 2D histogram of waveforms in a cluster, as part of the custom GUI. 
+
+Usage: Called from the gui.py for adding the heatmap plot to the custom GUI.
 """
 
 import numpy as np
@@ -13,13 +15,23 @@ from scipy import interpolate
 from scipy.stats import norm
 
 
-def generate_heatmap(h,s,c,e,p):
+def generate_heatmap(c,e,main_dict):
+    """
+    This function generates a 2D histogram of the spike waveforms of a cluster, in the form of a heatmap. 
     
-    with open(p['path'] + '/tetrode_{:g}_{:g}'.format(h,s)+ '/tetrode_{:g}_{:g}_spikeinfo.pickle'.format(h,s),'rb') as f:
-        data = pickle.load(f)
-    nr_of_spikes = data['P']['c{:g}'.format(c)][2].shape[0]
-    nr_of_timepoints = data['P']['c{:g}'.format(c)][2].shape[2]
-    waveforms = np.array([data['P']['c{:g}'.format(c)][2][i][e][:] for i in range(nr_of_spikes)])
+    Inputs:
+        h: Height index of the tetrode on the shank (0 corresponding to bottom-most)
+        s: Shank index (0 corresponding to left-most, on the electrode side)
+        c: Cluster index
+        e: Index for the electrode in the tetrode (0 corresponding to bottom-most, increasing clock-wise)
+        main_dict: Dictionary containing the waveforms, spike time info and the parameters dictionary
+        
+    Output: The 2D heatmap as a plot.
+    """
+    
+    nr_of_spikes = main_dict['P']['c{:g}'.format(c)][1].shape[0]
+    nr_of_timepoints = main_dict['P']['c{:g}'.format(c)][1].shape[2]
+    waveforms = np.array([main_dict['P']['c{:g}'.format(c)][1][i][e][:] for i in range(nr_of_spikes)])
     max_val = max([max(waveforms[i]) for i in range(nr_of_spikes)])
     min_val = min([min(waveforms[i]) for i in range(nr_of_spikes)])
     range_val = max_val - min_val
@@ -50,14 +62,22 @@ def g_inv(y,y_res,min_val,max_val):
     return val
     
 
-def generate_heatmap_interpolated(c,e,data):
-    p = data['data']['p']
-    # Load data
-    #with open(p['path'] + '/tetrode_{:g}_{:g}'.format(h,s)+ '/tetrode_{:g}_{:g}_spikeinfo.pickle'.format(h,s),'rb') as f:
-    #    data = pickle.load(f)
-    nr_of_spikes = data['P']['c{:g}'.format(c)][2].shape[0]
-    nr_of_timepoints = data['P']['c{:g}'.format(c)][2].shape[2]
-    waveforms = np.array([data['P']['c{:g}'.format(c)][2][i][e][:] for i in range(nr_of_spikes)])
+def generate_heatmap_interpolated(c,e,main_dict):
+    """
+    This function generates a 2D histogram of the spike waveforms of a cluster, in the form of a heatmap. In contrast to the previous function, this function generates the map with each pixel blurred by a Gaussian blur. 
+    
+    Inputs:
+        c: Cluster index
+        e: Index for the electrode in the tetrode (0 corresponding to bottom-most, increasing clock-wise)
+        main_dict: Dictionary containing the waveforms, spike time info and the parameters dictionary
+        
+    Output: The 2D heatmap as a plot.
+    """
+    
+    p = main_dict['p']
+    nr_of_spikes = main_dict['P']['c{:g}'.format(c)][1].shape[0]
+    nr_of_timepoints = main_dict['P']['c{:g}'.format(c)][1].shape[2]
+    waveforms = np.array([main_dict['P']['c{:g}'.format(c)][1][i][e][:] for i in range(nr_of_spikes)])
     
     # Define resolution:
     t_res = 200
