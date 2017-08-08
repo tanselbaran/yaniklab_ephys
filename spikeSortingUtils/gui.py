@@ -384,7 +384,10 @@ generateHeatmapBtn = QtGui.QPushButton('Generate Heatmap')
 def generateHeatmap():
     e = spin_heatmap_electrode.value()
     c = spin_heatmap_cluster.value()
-    generate_heatmap_interpolated(c,e,main_dict)
+    if p['probe_type'] == 'tetrode':
+        generate_heatmap_interpolated_for_tetrode(c,e,p)
+    elif p['probe_type'] == 'linear':
+        generate_heatmap_interpolated_for_linear(c,e,p)
     
 generateHeatmapBtn.clicked.connect(generateHeatmap)
 
