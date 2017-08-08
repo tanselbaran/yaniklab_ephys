@@ -124,5 +124,5 @@ def do_klusta_for_shank(probe,s,p):
     """
 
     file_dir = p['path'] + '/probe_{:g}_shank_{:g}'.format(probe,s)
-    #os.chdir(file_dir)
-    os.system('klusta ' + file_dir + '/probe_{:g}_shank_{:g}.prm'.format(probe,s))
+    os.chdir(file_dir)
+    os.system('klusta probe_{:g}_shank_{:g}.prm'.format(probe,s))
