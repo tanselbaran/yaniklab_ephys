@@ -8,9 +8,9 @@ GUI softwares.
 """
 
 import numpy as np
-from load_intan_rhd_format import *
+from utils.load_intan_rhd_format import *
 import os
-import OpenEphys
+import utils.OpenEphys
 import pickle
 
 def read_amplifier_dat_file(filepath):
