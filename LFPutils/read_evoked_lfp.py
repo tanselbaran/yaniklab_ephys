@@ -8,11 +8,11 @@ Contains the function for reading the stimulus-evoked LFP for a recording sessio
 Usage: through the main function in main.py script
 """
 
-from filtering import *
-from reading_utils import *
-from load_intan_rhd_format import *
+from utils.filtering import *
+from utils.reading_utils import *
+from utils.load_intan_rhd_format import *
 from matplotlib.pyplot import *
-from OpenEphys import *
+from utils.OpenEphys import *
 import pickle
 
 def read_evoked_lfp(coords,p,data):
