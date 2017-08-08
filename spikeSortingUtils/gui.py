@@ -24,10 +24,10 @@ def calculate_params(waveforms):
     
     Inputs:
     
-      waveforms: Array (Nx4xM, where N is the number of
+      waveforms: Array (NxLxM, where N is the number of
     the spiking events detected by the tetrode [or (total number of waveforms/4]
-    M is the number of samples per each waveform and 4 corresponds to the number
-    of channels in the tetrode.
+    M is the number of samples per each waveform and L corresponds to the number
+    of channels in the tetrode/shank.
 
     Outputs:
 
@@ -42,11 +42,11 @@ def calculate_params(waveforms):
     peaks = np.amax(waveforms,2)
     valleys = np.amin(waveforms,2)
     amps = peaks - valleys
-    begin = np.zeros((len(waveforms), 4))
-    end = np.zeros((len(waveforms), 4))
+    begin = np.zeros((len(waveforms), len(waveforms[0]))
+    end = np.zeros((len(waveforms), len(waveforms[0]))
     
     for i in range(len(waveforms)):
-        for j in range(4):
+        for j in range(len(waveforms[0]):
             began = False
             for k in range(len(waveforms[0][0])):
                 if (waveforms[i][j][k] > (valleys[i][j] + amps[i][j] / 2)):
@@ -101,28 +101,29 @@ def generate_scatter_plot(params_dict, feature1, electrode1, feature2, electrode
     plt.addItem(s)
     return plt
 
-def generate_tetrodescope(raw_data, interval):
+def generate_datascope(raw_data, interval):
     """
     This function plots a specified interval of the raw data on the Tetrodescope.
     
     Inputs:
-      raw_data: 4xN array consisting of the raw data from the electrodes where N
-            is the number of samples in each electrode. 
+      raw_data: LxN array consisting of the raw data from the electrodes where N
+            is the number of samples in each electrode and L is the number of electrodes 
+            in the tetrode/shank.
       interval: Interval defined by the user over which the data will be plotted in 
-            tetrodescope.
+            datascope.
             
     Outputs: 
       plt: Plot item containing the plot of the raw tetrode data over the interval.
     """
     x_label = 'Time (s)'
     y_label = 'Voltage scale bar (uV)'
-    tetrodemin = interval[0] * p['sample_rate']
-    tetrodemax = interval[1] * p['sample_rate']
-    time = np.linspace(interval[0], interval[1], (tetrodemax-tetrodemin))
+    windowmin = interval[0] * p['sample_rate']
+    windowmax = interval[1] * p['sample_rate']
+    time = np.linspace(interval[0], interval[1], (windowmax-windowmin))
     
     plt = pg.PlotItem(labels={'left':y_label, 'bottom':x_label})
     for electrode in range(4):
-        plt.plot(time,tetrode[electrode,tetrodemin:tetrodemax] + 100*electrode)
+        plt.plot(time,raw_data[electrode,windowmin:windowmax] + 100*electrode)
 
     for clu in range(n_clusters):
         pen1 = pg.mkPen(pg.intColor(clu,n_clusters))
@@ -133,9 +134,9 @@ def generate_tetrodescope(raw_data, interval):
         pre = p['samples_before']
         post = p['samples_after']
         for time in spike_info_dict[('c'+str(clu))][0]:
-            if (time > tetrodemin) and (time < tetrodemax):
+            if (time > windowmin) and (time < windowmax):
                 begin = max([(time-pre),0])
-                end = min([len(tetrode[0,:]),(time+post)])
+                end = min([len(raw_data[0,:]),(time+post)])
                 ran = np.r_[begin:end]
                 times = np.append(times, ran)
                 times = times.astype('int')
@@ -145,7 +146,7 @@ def generate_tetrodescope(raw_data, interval):
         times_real = np.divide(times,p['sample_rate'])
         
         for electrode in range(4):
-            plt.plot(times_real, tetrode[electrode,times]+electrode*100, connect=connect, pen=pen1)
+            plt.plot(times_real, raw_data[electrode,times]+electrode*100, connect=connect, pen=pen1)
      
     return plt
         
@@ -169,17 +170,11 @@ def createWindow(interval):
     
 ### Call the waveform dictionary and timestamps from pickle file
 
-
 pickle_file = str(sys.argv[1])
 main_dict = pickle.load(open(pickle_file, 'rb'))
 spike_info_dict = main_dict['P']
-raw_data = main_dict['data']['raw_data']
-p = main_dict['data']['p']
-p['sample_rate'] = 20000
-
-tetrode = np.zeros((4,int(len(raw_data)/4)))
-for electrode in range(4):
-    tetrode[electrode, :] = raw_data[electrode:len(raw_data):4]
+raw_data = main_dict['data']
+p = main_dict['p']
 
 n_clusters = len(spike_info_dict)
 
@@ -260,10 +255,10 @@ tree2.addTopLevelItem(feat2_2)
 spin_electrode1 = pg.SpinBox(value=0, bounds=(0,3), int=True, step=1)
 spin_electrode2 = pg.SpinBox(value=0, bounds=(0,3), int=True, step=1)
 
-num_seconds = int(len(tetrode[0,:])/p['sample_rate'])
-spin_tetrodemin = pg.SpinBox(value=0, bounds=(0, num_seconds), int=True, step=1)
-spin_tetrodemax = pg.SpinBox(value=5, bounds=(0, num_seconds), int=True, step=1)
-updateTetBtn = QtGui.QPushButton('Update TetrodeScope')
+num_seconds = int(len(raw_data[0,:])/p['sample_rate'])
+spin_windowmin = pg.SpinBox(value=0, bounds=(0, num_seconds), int=True, step=1)
+spin_windowmax = pg.SpinBox(value=5, bounds=(0, num_seconds), int=True, step=1)
+updateWinBtn = QtGui.QPushButton('Update DataScope')
 
 saveBtn = QtGui.QPushButton('Save dock state')
 restoreBtn = QtGui.QPushButton('Restore dock state')
@@ -303,12 +298,12 @@ def updateScatter():
     
 updateScatterBtn.clicked.connect(updateScatter)
 
-def updateTet():
-    tetrodemin = spin_tetrodemin.value()
-    tetrodemax = spin_tetrodemax.value()
-    if tetrodemax > tetrodemin:
-        plot_big = generate_tetrodescope(tetrode, [tetrodemin, tetrodemax])
-        plot_zoom = generate_tetrodescope(tetrode, [tetrodemin, tetrodemax])
+def updateWin():
+    windowmin = spin_windowmin.value()
+    windowmax = spin_windowmax.value()
+    if windowmax > windowmin:
+        plot_big = generate_datascope(raw_data, [windowmin, windowmax])
+        plot_zoom = generate_datascope(raw_data, [windowmin, windowmax])
     plot_window_big.clear()
     plot_window_zoom.clear()
     region = pg.LinearRegionItem()
@@ -326,12 +321,12 @@ def updateTet():
         
     region.sigRegionChanged.connect(update9)
     plot_zoom.sigRangeChanged.connect(updateRegion)
-    region.setRegion([tetrodemin+1,tetrodemin+2]) 
+    region.setRegion([windowmin+1,windowmin+2]) 
     
     plot_window_big.addItem(plot_big)
     plot_window_zoom.addItem(plot_zoom)
       
-updateTetBtn.clicked.connect(updateTet)
+updateWinBtn.clicked.connect(updateWin)
 
 #Adding the widgets in the sections
 layout1.addWidget(text_intro, row=1, col=1, rowspan=1, colspan=1)
@@ -349,14 +344,14 @@ layout4.addWidget(tree2)
 layout5.addWidget(text_sel2, row=1)
 layout5.addWidget(spin_electrode2, row=2)
 
-text_tetrodemin = QtGui.QLabel('Beginning of TetrodeScope (s)')
-text_tetrodemax = QtGui.QLabel('End of TetrodeScope (s)')
-layout6_1.addWidget(text_tetrodemin, row=1, col=1)
-layout6_1.addWidget(text_tetrodemax, row=1, col=2)
-layout6_1.addWidget(spin_tetrodemin, row=2, col=1)
-layout6_1.addWidget(spin_tetrodemax, row=2, col=2)
+text_windowmin = QtGui.QLabel('Beginning of DataScope (s)')
+text_windowmax = QtGui.QLabel('End of DataScope (s)')
+layout6_1.addWidget(text_windowmin, row=1, col=1)
+layout6_1.addWidget(text_windowmax, row=1, col=2)
+layout6_1.addWidget(spin_windowmin, row=2, col=1)
+layout6_1.addWidget(spin_windowmax, row=2, col=2)
 
-layout6_2.addWidget(updateTetBtn, row=1, col=1, rowspan=1, colspan=1)
+layout6_2.addWidget(updateWinBtn, row=1, col=1, rowspan=1, colspan=1)
 #layout7.addWidget(saveBtn, row=1, col=1, rowspan=1, colspan=1)
 #layout7.addWidget(restoreBtn, row=1, col=2, rowspan=1, colspan=1)
 
@@ -364,18 +359,25 @@ d1.addWidget(w1)
 
 ##Waveform density heatmap plot in the second dock
 
-
 w2 = pg.LayoutWidget()
 layout2_1 = w2.addLayout(row=1,col=1,rowspan=1,colspan=2)
 layout2_2 = w2.addLayout(2,1,1,2)
 layout2_3 = w2.addLayout(3,1,1,2)
 
 text_heatmap = QtGui.QLabel('Please select an electrode an cluster to generate the waveform density heatmap')
-text_heatmap_electrode = QtGui.QLabel('Electrode (0-3)')
-text_heatmap_cluster = QtGui.QLabel('Cluster')
+                       
+if p['probe_type'] == 'tetrode':                 
+    text_heatmap_electrode = QtGui.QLabel('Electrode (0-3)')
+    text_heatmap_cluster = QtGui.QLabel('Cluster')
 
-spin_heatmap_electrode = pg.SpinBox(value=0, bounds=(0, 3), int=True, step=1)
-spin_heatmap_cluster = pg.SpinBox(value=0, bounds=(0, n_clusters), int=True, step=1)
+    spin_heatmap_electrode = pg.SpinBox(value=0, bounds=(0, 3), int=True, step=1)
+    spin_heatmap_cluster = pg.SpinBox(value=0, bounds=(0, n_clusters), int=True, step=1)
+elif p['probe_type'] == 'linear':
+    text_heatmap_electrode = QtGui.QLabel('Electrode (0-{:g})'.format(p['nr_of_electrodes_per_shank']))
+    text_heatmap_cluster = QtGui.QLabel('Cluster')
+
+    spin_heatmap_electrode = pg.SpinBox(value=0, bounds=(0,p['nr_of_electrodes_per_shank']), int=True, step=1)
+    spin_heatmap_cluster = pg.SpinBox(value=0, bounds=(0, n_clusters), int=True, step=1)                  
 
 generateHeatmapBtn = QtGui.QPushButton('Generate Heatmap')
 
@@ -429,7 +431,7 @@ s8 = generate_scatter_plot(params_dict, 'Amplitude', 0, 'Amplitude', 2)
 w8.addItem(s8)
 d8.addWidget(w8)
 
-##Tetrodescope in dock 9
+##Datascope in dock 9
 
 w9 = pg.LayoutWidget()
 
@@ -439,8 +441,13 @@ layout9_2 = w9.addLayout(row=1,col=1,rowspan=1)
 plot_window_big = pg.GraphicsLayoutWidget()
 plot_window_zoom = pg.GraphicsLayoutWidget()
 
-plot_big = generate_tetrodescope(tetrode, [0,5])
-plot_zoom = generate_tetrodescope(tetrode, [0,5])
+if p['probe_type'] == 'tetrode':                      
+    plot_big = generate_tetrodescope(raw_data, [0,5])
+    plot_zoom = generate_tetrodescope(raw_data, [0,5])
+elif p['probe_type'] == 'linear':
+    plot_big = generate_tetrodescope(raw_data, [0, p['nr_of_electrodes_per_shank']+1)
+    plot_zoom = generate_tetrodescope(raw_data, [0, p['nr_of_electrodes_per_shank']+1)
+                       
 plot_window_big.addItem(plot_big,row=1, col=1, rowspan=1, colspan=1)
 plot_window_zoom.addItem(plot_zoom,row=1, col=1, rowspan=1, colspan=1)
 
