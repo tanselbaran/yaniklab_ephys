@@ -9,8 +9,8 @@ Usage: Should be run through the IPython notebooks for spike sorting or LFP anal
 """
 
 import sys
-from load_intan_rhd_format import *
-from reading_utils import *
+from utils.load_intan_rhd_format import *
+from utils.reading_utils import *
 from time import time
 from spikeSortingUtils.klusta_preprocessing_utils import *
 from LFPutils.read_evoked_lfp import read_evoked_lfp
