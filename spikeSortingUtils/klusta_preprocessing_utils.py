@@ -14,7 +14,7 @@ import json
 import pickle
 from scipy import signal
 from shutil import copyfile
-from filtering import *
+from utils.filtering import *
 
 ### Klustakwik utilities for tetrode data analyzing ###
 
