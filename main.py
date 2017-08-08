@@ -24,11 +24,9 @@ def main(p):
         p: Dictionary of parameters that contains the parameters of recording and preferences regarding the particular mode of data analysis to be used. Usually created via the
         IPython notebook, "generate_params_dict.ipynb".
     """
-
-    t0 = time()
-    print('start')
+    
     print('start reading out and analyzing trodes')
-
+    mycwd = os.getcwd()
 ########Read out and Analysis################
 
 #Tetrode
@@ -49,9 +47,6 @@ def main(p):
                         print('############################# performing stimulus evoked LFP analysis for tetrode {:g}{:g} ##############################################'.format(h,s))
                         read_evoked_lfp(probe,[h,s],p,tetrode_file)
 
-        t1 = time()
-        print('Effort to read and analyze tetrodes: ', t1-t0)
-
 #Linear
     #Iterating over probes and shanks
     elif p['probe_type'] == 'linear':
@@ -62,12 +57,10 @@ def main(p):
                 if p['spikeSorting']:
                     print('################################### generate prm and prb file for probe {:g} shank {:g} ######################################################'.format(probe,s))
                     create_shank_prm_file(probe,s,p)
+                    os.chdir(mycwd)
                     create_shank_prb_file(probe,s,p)
                     print('################################### spikesorting, clustering of probe {:g} shank {:g} data ###################################################'.format(probe,s))
                     do_klusta_for_shank(probe,s,p)
                 if p['LFP_analysis']:
                     print('################################### performing stimulus evoked LFP analysis for probe {:g} shank {:g} ########################################'.format(probe,s))
                     read_evoked_lfp([probe,s],p,shank_file)
-
-        t1 = time()
-        print('Effort to read and analyze shanks: ', t1-t0)
