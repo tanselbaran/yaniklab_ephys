@@ -75,8 +75,8 @@ def get_unit_indices(units, clusters):
     for unit in range(len(units)):
         unit_idx = np.zeros(0)
         for cluster in range(len(units[unit])):
-        cluster_indices = np.where(clusters.labels_ == units[unit][cluster])
-        unit_idx = np.append(unit_idx, cluster_indices)
+            cluster_indices = np.where(clusters.labels_ == units[unit][cluster])
+            unit_idx = np.append(unit_idx, cluster_indices)
         unit_idx = unit_idx.astype('int')
     unit_indices[unit] = unit_idx
 
