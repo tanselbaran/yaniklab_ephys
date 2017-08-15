@@ -1,5 +1,6 @@
 import numpy as np
-from matplotlib.pyplot import * 
+from matplotlib.pyplot import *
+from utils.filtering import *
 
 def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_cutoff = 300., sample_rate = 30000., pre = 0.8, post = 1.2, threshold_coeff = 5, artefact_limit = 20, colors = ['xkcd:purple', 'xkcd:green', 'xkcd:pink', 'xkcd:brown', 'xkcd:red', 'xkcd:yellow', 'xkcd:bright green', 'xkcd:cyan', 'xkcd:black', 'xkcd:light orange']):
     spike_timerange = np.arange(-pre, post, (1000.0/sample_rate))
