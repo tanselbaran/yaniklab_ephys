@@ -31,7 +31,7 @@ def read_location(dirs, channels, global_params):
 
     end_times = np.zeros(len(dirs))
     end_inds = np.zeros(len(dirs))
-    data = np.zeros((len(dirs), 0))
+    data = np.zeros((len(channels), 0))
     waveforms = np.zeros((0,len(channels),60))
     peak_times = np.zeros(0)
     stim = np.zeros(0)
@@ -69,17 +69,21 @@ def read_location(dirs, channels, global_params):
             bandfilt = global_params['bandfilt']
             filtered_data_electrode = bandfilt(data_electrode)
             (waveforms_trode, peak_times_trode) = extract_waveforms(filtered_data_electrode, params)
+            waveforms = np.append(waveforms, waveforms_trode, 0)
+            peak_times = np.append(peak_times, peak_times_trode + current_end_time)
 
         data = np.append(data, data_electrode, 1)
         stim = np.append(stim, params['stim'])
-        waveforms = np.append(waveforms, waveforms_trode, 0)
-        peak_times = np.append(peak_times, peak_times_trode + current_end_time)
-
         current_end_time = current_end_time + params['time'][-1]
-
-        end_inds[i] = np.sum((end_times*global_params['sample_rate'])[0:i+1]) + i
+        end_inds[rec] = np.sum((end_times*global_params['sample_rate'])[0:rec+1]) + rec
     end_inds = np.insert(end_inds,0,0)
-    return waveforms, data, peak_times, stim, time, end_inds
+
+    if global_params['spike_sorting'] == True:
+        location_output = {'waveforms': waveforms, 'data':data, 'peak_times':peak_times, 'stim':stim, 'time':time, 'end_inds':end_inds}
+    else:
+        location_output = {'data':data, 'stim':stim, 'time':time, 'end_inds':end_inds}
+
+    return location_output
 
 def get_unit_indices(units, clusters):
     unit_indices = {}
