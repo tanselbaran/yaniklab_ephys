@@ -15,6 +15,25 @@ from matplotlib.pyplot import *
 from utils.OpenEphys import *
 import pickle
 
+def extract_stim_timestamps(stim):
+    stim_timestamps = [] #numpy array that contains the stimulus timestamps
+		#Saving the timestamps where digital input turns from 0 to 1
+        for i in range(1,len(trigger)):
+            if trigger[i-1] == 0 and trigger[i] == 1:
+                stim_timestamps = np.append(stim_timestamps, i)
+    return stim_timestamps
+
+def read_evoked_lfp_from_stim_timestamps(filtered_data, stim, stim_timestamps, p):
+    #Cutting the triggers that happen too close to the beginning or the end of the recording session
+    stim_timestamps = stim_timestamps[(stim_timestamps > (p['cut_beginning']*p['sample_rate']))]
+    stim_timestamps = stim_timestamps[(stim_timestamps < (len(stim)-p['cut_end']*p['sample_rate']))]
+    
+	#Saving the evoked LFP waveforms in an array
+    evoked = np.zeros((len(stim_timestamps), len(filtered_data), int(p['sample_rate']*(p['evoked_pre']+p['evoked_post']))))
+    for i in range(len(stim_timestamps)):
+        evoked[i,:,:] = filtered_data[:,int(stim_timestamps[i]-p['evoked_pre']*p['sample_rate']):int(stim_timestamps[i]+p['evoked_post']*p['sample_rate'])]
+    return evoked
+    
 def read_evoked_lfp(coords,p,data):
     """This function processes the data traces for the specified probe and shank in a recording session to obtain 
 	the mean evoked LFP activity. It saves the evoked activity and the average evoked activity in a Pickle file. It 
@@ -62,12 +81,7 @@ def read_evoked_lfp(coords,p,data):
         trigger_filepath =  p['path'] + '/board-DIN-01.dat' #In the case that the trigger is coming from the Digital Input 1 of the board
         with open(trigger_filepath, 'rb') as fid:
             trigger = np.fromfile(fid, np.int16)
-
-        stim_timestamps = [] #numpy array that contains the stimulus timestamps
-		#Saving the timestamps where digital input turns from 0 to 1
-        for i in range(1,len(trigger)):
-            if trigger[i-1] == 0 and trigger[i] == 1:
-                stim_timestamps = np.append(stim_timestamps, i)
+        stim_timestamps = extract_stim_timestamps(trigger)
 
     elif p['fileformat'] == 'cont':
 		#Reading the digital input from file
@@ -104,14 +118,6 @@ def read_evoked_lfp(coords,p,data):
             if trigger_all[i-1] == 0 and trigger_all[i] == 1:
                 stim_timestamps = np.append(stim_timestamps, i)
     
-    #Cutting the triggers that happen too close to the beginning or the end of the recording session
-    stim_timestamps = stim_timestamps[(stim_timestamps > (p['cut_beginning']*p['sample_rate']))]
-    stim_timestamps = stim_timestamps[(stim_timestamps < (len(trigger)-p['cut_end']*p['sample_rate']))]
-    
-	#Saving the evoked LFP waveforms in an array
-    evoked = np.zeros((len(stim_timestamps), nr_of_electrodes, int(p['sample_rate']*(p['evoked_pre']+p['evoked_post']))))
-    for i in range(len(stim_timestamps)):
-        evoked[i,:,:] = filtered[:,int(stim_timestamps[i]-p['evoked_pre']*p['sample_rate']):int(stim_timestamps[i]+p['evoked_post']*p['sample_rate'])]
-
+    evoked = read_evoked_lfp_from_stim_timestamps(filtered, trigger, stim_timestamps, p)
     #Save all evoked activity in a pickle file
     pickle.dump({'evoked':evoked, 'stim_timestamps':stim_timestamps}, open(save_file, 'wb'), protocol=-1)
