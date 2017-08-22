@@ -18,8 +18,8 @@ import pickle
 def extract_stim_timestamps(stim):
     stim_timestamps = [] #numpy array that contains the stimulus timestamps
 		#Saving the timestamps where digital input turns from 0 to 1
-    for i in range(1,len(trigger)):
-        if trigger[i-1] == 0 and trigger[i] == 1:
+    for i in range(1,len(stim)):
+        if stim[i-1] == 0 and stim[i] == 1:
             stim_timestamps = np.append(stim_timestamps, i)
     return stim_timestamps
 
