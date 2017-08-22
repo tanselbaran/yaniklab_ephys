@@ -1,8 +1,11 @@
 import numpy as np
 from matplotlib.pyplot import *
 from utils.filtering import *
+from utils.load_intan_rhd_format import *
+from utils.reading_utils import *
+from tqdm import tqdm
 
-def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_cutoff = 300., sample_rate = 30000., pre = 0.8, post = 1.2, threshold_coeff = 5, artefact_limit = 20, colors = ['xkcd:purple', 'xkcd:green', 'xkcd:pink', 'xkcd:brown', 'xkcd:red', 'xkcd:yellow', 'xkcd:bright green', 'xkcd:cyan', 'xkcd:black', 'xkcd:light orange']):
+def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_cutoff = 300., sample_rate = 30000., pre = 0.8, post = 1.2, threshold_coeff = 5, artefact_limit = 20, colors = ['xkcd:purple', 'xkcd:green', 'xkcd:pink', 'xkcd:brown', 'xkcd:red', 'xkcd:yellow', 'xkcd:bright green', 'xkcd:cyan', 'xkcd:black', 'xkcd:light orange'], spike_sorting = True):
     spike_timerange = np.arange(-pre, post, (1000.0/sample_rate))
 
     global_params = {
@@ -15,12 +18,14 @@ def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_
         'low_cutoff': low_cutoff,
         'threshold_coeff': threshold_coeff,
         'artefact_limit': artefact_limit,
-        'colors': colors
+        'colors': colors,
+        'spike_sorting': spike_sorting
     }
 
     bandfilt = bandpassFilter(rate = sample_rate, high = high_cutoff, low = low_cutoff, order = 4)
+    global_params['bandfilt'] = bandfilt
 
-    return global_params, bandfilt
+    return global_params
 
 def read_location(dirs, channels, global_params):
 
@@ -44,7 +49,7 @@ def read_location(dirs, channels, global_params):
         params['rhd_path'] = mainfolder + 'info.rhd'
         params['time_path'] = mainfolder + 'time.dat'
         params['header'] = read_data(params['rhd_path'])
-        params['time'] = read_time_dat_file(params['time_path'], sample_rate)
+        params['time'] = read_time_dat_file(params['time_path'], global_params['sample_rate'])
         params['channels'] = channels
         params['stim_path'] = mainfolder + 'board-DIN-01.dat'
         params['stim'] = read_amplifier_dat_file(params['stim_path'])
@@ -59,9 +64,11 @@ def read_location(dirs, channels, global_params):
         for trode in range(len(params['channels'])):
             filepath = params['mainfolder'] + 'amp-' + params['header']['amplifier_channels'][params['channels'][trode]]['native_channel_name'] + '.dat'
             data_electrode[trode] = read_amplifier_dat_file(filepath)
-        filtered_data_electrode = read_and_filter_data(params)
 
-        (waveforms_trode, peak_times_trode) = extract_waveforms(filtered_data_electrode, params)
+        if global_params['spike_sorting'] == True:
+            bandfilt = global_params['bandfilt']
+            filtered_data_electrode = bandfilt(data_electrode)
+            (waveforms_trode, peak_times_trode) = extract_waveforms(filtered_data_electrode, params)
 
         data = np.append(data, data_electrode, 1)
         stim = np.append(stim, params['stim'])
