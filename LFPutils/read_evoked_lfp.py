@@ -21,6 +21,7 @@ def extract_stim_timestamps(stim):
     for i in range(1,len(stim)):
         if stim[i-1] == 0 and stim[i] == 1:
             stim_timestamps = np.append(stim_timestamps, i)
+    stim_timestamps = np.asarray(stim_timestamps)
     return stim_timestamps
 
 def read_evoked_lfp_from_stim_timestamps(filtered_data, stim, stim_timestamps, p):

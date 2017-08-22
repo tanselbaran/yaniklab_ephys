@@ -6,7 +6,7 @@ from utils.reading_utils import *
 from tqdm import tqdm
 from LFPutils.read_evoked_lfp import *
 
-def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_cutoff = 300., sample_rate = 30000., pre = 0.8, post = 1.2, threshold_coeff = 5, artefact_limit = 20, cut_beginning = 1, cut_end = 1, colors = ['xkcd:purple', 'xkcd:green', 'xkcd:pink', 'xkcd:brown', 'xkcd:red', 'xkcd:yellow', 'xkcd:bright green', 'xkcd:cyan', 'xkcd:black', 'xkcd:light orange'], spike_sorting = True):
+def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_cutoff = 300., sample_rate = 30000., pre = 0.8, post = 1.2, threshold_coeff = 5, artefact_limit = 20, cut_beginning = 1, cut_end = 1, evoked_pre = 50, evoked_post = 200, colors = ['xkcd:purple', 'xkcd:green', 'xkcd:pink', 'xkcd:brown', 'xkcd:red', 'xkcd:yellow', 'xkcd:bright green', 'xkcd:cyan', 'xkcd:black', 'xkcd:light orange'], spike_sorting = True):
     spike_timerange = np.arange(-pre, post, (1000.0/sample_rate))
 
     global_params = {
@@ -22,7 +22,9 @@ def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_
         'colors': colors,
         'spike_sorting': spike_sorting,
         'cut_beginning': cut_beginning,
-        'cut_end': cut_end
+        'cut_end': cut_end,
+        'evoked_pre': evoked_pre,
+        'evoked_post': evoked_post,        
     }
 
     bandfilt = bandpassFilter(rate = sample_rate, high = high_cutoff, low = low_cutoff, order = 4)
