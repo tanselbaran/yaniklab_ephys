@@ -6,7 +6,7 @@ from utils.reading_utils import *
 from tqdm import tqdm
 from LFPutils.read_evoked_lfp import *
 
-def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_cutoff = 300., sample_rate = 30000., pre = 0.8, post = 1.2, threshold_coeff = 5, artefact_limit = 20, cut_beginning = 1, cut_end = 1, evoked_pre = 50, evoked_post = 200, colors = ['xkcd:purple', 'xkcd:green', 'xkcd:pink', 'xkcd:brown', 'xkcd:red', 'xkcd:yellow', 'xkcd:bright green', 'xkcd:cyan', 'xkcd:black', 'xkcd:light orange'], spike_sorting = True):
+def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_cutoff = 300., sample_rate = 30000., pre = 0.8, post = 1.2, threshold_coeff = 5, artefact_limit = 20, cut_beginning = 1, cut_end = 1, evoked_pre = 0.05, evoked_post = 0.2, colors = ['xkcd:purple', 'xkcd:green', 'xkcd:pink', 'xkcd:brown', 'xkcd:red', 'xkcd:yellow', 'xkcd:bright green', 'xkcd:cyan', 'xkcd:black', 'xkcd:light orange'], spike_sorting = True, mode = 'Continuous'):
     spike_timerange = np.arange(-pre, post, (1000.0/sample_rate))
 
     global_params = {
@@ -24,7 +24,7 @@ def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_
         'cut_beginning': cut_beginning,
         'cut_end': cut_end,
         'evoked_pre': evoked_pre,
-        'evoked_post': evoked_post,        
+        'evoked_post': evoked_post,
     }
 
     bandfilt = bandpassFilter(rate = sample_rate, high = high_cutoff, low = low_cutoff, order = 4)
@@ -90,11 +90,14 @@ def read_location(dirs, channels, global_params):
 
     return location_output
 
-def surface_evoked_LFP(location_output, global_params):
-    stim_timestamps = extract_stim_timestamps(location_output['stim'])
+def surface_evoked_LFP(location_output, begin, end, global_params, mode):
+    if mode == 'evoked':
+        stim_timestamps = extract_stim_timestamps_der(location_output['stim'])
+    if mode == 'spont':
+        stim_timestamps = np.arange(begin, end, global_params['sample_rate'])
     lowfilt = lowpassFilter(rate = global_params['sample_rate'], high = 300, order = 4)
     filtered_data = lowfilt(location_output['data'])
-    evoked = read_evoked_lfp_from_stim_timestamps(filtered_data, location_output['stim'], stim_timestamps, global_params)
+    evoked = read_evoked_lfp_from_stim_timestamps(filtered_data, begin, end, stim_timestamps, global_params)
     return evoked
 
 def get_unit_indices(units, clusters):

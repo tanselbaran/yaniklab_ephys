@@ -13,25 +13,31 @@ from utils.reading_utils import *
 from utils.load_intan_rhd_format import *
 from matplotlib.pyplot import *
 from utils.OpenEphys import *
+from tqdm import tqdm
 import pickle
 
 def extract_stim_timestamps(stim):
     stim_timestamps = [] #numpy array that contains the stimulus timestamps
 		#Saving the timestamps where digital input turns from 0 to 1
-    for i in range(1,len(stim)):
-        if stim[i-1] == 0 and stim[i] == 1:
+    for i in tqdm(range(1,len(stim))):
+        if stim[i-1] == 0 and stim[i] != 1:
             stim_timestamps = np.append(stim_timestamps, i)
     stim_timestamps = np.asarray(stim_timestamps)
     return stim_timestamps
 
-def read_evoked_lfp_from_stim_timestamps(filtered_data, stim, stim_timestamps, p):
+def extract_stim_timestamps_der(stim):
+    stim_diff = np.diff(stim)
+    stim_timestamps = np.where(stim_diff > 0)[0]
+    return stim_timestamps
+
+def read_evoked_lfp_from_stim_timestamps(filtered_data, begin, end, stim_timestamps, p):
     #Cutting the triggers that happen too close to the beginning or the end of the recording session
-    stim_timestamps = stim_timestamps[(stim_timestamps > (p['cut_beginning']*p['sample_rate']))]
-    stim_timestamps = stim_timestamps[(stim_timestamps < (len(stim)-p['cut_end']*p['sample_rate']))]
+    stim_timestamps = stim_timestamps[(stim_timestamps > (stim_timestamps[0] + p['cut_beginning']*p['sample_rate']))]
+    stim_timestamps = stim_timestamps[(stim_timestamps < (stim_timestamps[-1]-p['cut_end']*p['sample_rate']))]
 
 	#Saving the evoked LFP waveforms in an array
     evoked = np.zeros((len(stim_timestamps), len(filtered_data), int(p['sample_rate']*(p['evoked_pre']+p['evoked_post']))))
-    for i in range(len(stim_timestamps)):
+    for i in tqdm(range(len(stim_timestamps))):
         evoked[i,:,:] = filtered_data[:,int(stim_timestamps[i]-p['evoked_pre']*p['sample_rate']):int(stim_timestamps[i]+p['evoked_post']*p['sample_rate'])]
     return evoked
 
