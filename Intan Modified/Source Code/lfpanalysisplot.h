@@ -52,11 +52,13 @@ public:
     void setTScale(int t);
     void setTStepValue(int t);
     void setErrorbarDisplayState(bool);
+    void changeAnalysisType(int);
 
     void applyStartProcess();
     void applyStopProcess();
 
 
+    void setAnalysisWindow(double startInMs, double endInMs);
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
 
@@ -82,11 +84,12 @@ private:
     SignalProcessor *signalProcessor;
     LfpPlot *lfpPlot;
 
+
     // Necessary components for Analysis based on each LFP waveform stored
     QVector<QVector<double> > lfpWaveform; //For one instance retrieved from LfpPlot class
     QVector<QVector<double> > lfpAnalysisData; //Analysis results is stored here-- Min, Max, Max-Min etc.
-    QVector<double> mLfpAnalysisData;
-    QVector<double> stdLfpAnalysisData;
+    //QVector<double> mLfpAnalysisData;
+    //QVector<double> stdLfpAnalysisData;
 
     //Necessary components for analysis based on overall LFP average
     QVector<double> meanLfpWaveform;
@@ -96,6 +99,15 @@ private:
     int numLfpWaveforms;
     int maxNumLfpWaveforms;
     int totalTSteps;
+    double tLfpStepMsec;
+
+    int analysisType;
+    //search window descriptions
+    int windowStartTimeIndex;
+    int windowEndTimeIndex;
+
+    double windowStartTimeInMs;
+    double windowEndTimeInMs;
 
     bool startingNewChannel;
     bool errorbarDisplayState;

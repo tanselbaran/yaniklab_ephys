@@ -144,11 +144,14 @@ private slots:
     void setDacThreshold7(int threshold);
     void setDacThreshold8(int threshold);
 
+    //added as expansion
+    void selectReferenceChannel(int index);
 private:
     void createActions();
     void createMenus();
     void createStatusBar();
     void createLayout();
+    void createReferenceChannelScrollOptions();
 
     void openInterfaceBoard();
     void findConnectedAmplifiers();
@@ -341,6 +344,7 @@ private:
     QComboBox *numFramesComboBox;
     QComboBox *sampleRateComboBox;
     QComboBox *notchFilterComboBox;
+    QComboBox *referenceChannelComboBox; //ComboBox for reference Channel
 
     QSpinBox *dac1ThresholdSpinBox;
     QSpinBox *dac2ThresholdSpinBox;

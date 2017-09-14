@@ -66,6 +66,9 @@
 #define LINEAR_PROBE_TYPE   1
 #define TETROTE_PROBE_TYPE  2
 
+//LFP Analysis CONSTANTS
+#define MIN_ANALYSIS 0
+#define MAX_MIN_DIFFERENCE_ANALYSIS 1
 // Save File Format Enumeration
 enum SaveFormat {
     SaveFormatIntan,

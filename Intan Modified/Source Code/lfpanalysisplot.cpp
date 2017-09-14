@@ -61,6 +61,9 @@ LfpAnalysisPlot::LfpAnalysisPlot(LfpPlot *inLfpPlot, SignalProcessor *inSignalPr
     yScale = 500;
     tScaleInSec = 10*60;
     tStepSec = 1;
+    analysisType = MIN_ANALYSIS;
+    tLfpStepMsec = 1;
+    setAnalysisWindow(0 , 50);
 }
 
 // Set voltage scale.
@@ -74,8 +77,19 @@ void LfpAnalysisPlot::setYScale(int newYScale)
 void LfpAnalysisPlot::setSampleRate(double newSampleRate)
 {
     totalTSteps = lfpPlot->totalTSteps;
-    //Send Message and Stop the Run Reset the stuff
+    tLfpStepMsec = lfpPlot->tStepMsec;
 
+    double initialTimePoint = - (lfpPlot->preTriggerTSteps) * tLfpStepMsec;
+
+    windowStartTimeIndex = qCeil((windowStartTimeInMs - initialTimePoint) / tLfpStepMsec);
+    windowEndTimeIndex = qCeil((windowEndTimeInMs - initialTimePoint) /tLfpStepMsec) + 1 ;
+
+    windowStartTimeIndex = (windowStartTimeIndex < 0) ? 0 : windowStartTimeIndex;
+    windowEndTimeIndex = (windowEndTimeIndex > totalTSteps) ? totalTSteps : windowEndTimeIndex;
+
+    qDebug() << "index: "<< QString::number( windowStartTimeIndex) << " , " << QString::number(windowEndTimeIndex);
+
+    //Send Message and Stop the Run Reset the stuff
 }
 
 // Draw axis lines on display.
@@ -194,53 +208,97 @@ void LfpAnalysisPlot::updateWaveform()
     double stdFromMeanResp = 0.0;
 
 
+    if(analysisType == MIN_ANALYSIS ){
+        if(numLfpWaveforms==0){
 
-    if(numLfpWaveforms==0){
+        }else{
+            for (int i = 0; i < numLfpWaveforms; ++i) {
+                //find min for each LFP Waveform recorded and register to singleShotLfpData
+                int offsetVal = lfpPlot->lfpWaveformIndex - numLfpWaveforms;
+                double temp_min = lfpPlot->lfpWaveform.at(i).at(windowStartTimeIndex);
 
-    }else{
-        for (int i = 0; i < numLfpWaveforms; ++i) {
-            //find min for each LFP Waveform recorded and register to singleShotLfpData
-            int offsetVal = lfpPlot->lfpWaveformIndex - numLfpWaveforms;
-            double temp_min = lfpPlot->lfpWaveform.at(i).at(0);
-            for(int j=0; j < totalTSteps; ++j){
-                temp_min = (temp_min > lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30 ).at(j)) ? lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30 ).at(j) : temp_min;
+                //search minimum as adjusted in the comboBox
+                for(int j=windowStartTimeIndex ; j < windowEndTimeIndex; ++j){
+                    temp_min = (temp_min > lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30 ).at(j)) ? lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30 ).at(j) : temp_min;
+                }
+                singleShotLfpData[i] = temp_min;
+                temp_av +=singleShotLfpData[i];
             }
-            singleShotLfpData[i] = temp_min;
-            temp_av +=singleShotLfpData[i];
-        }
-        temp_av = temp_av/numLfpWaveforms;
+            temp_av = temp_av/numLfpWaveforms;
 
-        meanSingleShotLfpData = lfpPlot->meanLfpWaveform.at(0);
-        int minPointIndex = 0;
-        for(int j=0; j < totalTSteps; ++j){
-            minPointIndex = (meanSingleShotLfpData > lfpPlot->meanLfpWaveform.at(j)) ? j : minPointIndex;
-            meanSingleShotLfpData = (meanSingleShotLfpData > lfpPlot->meanLfpWaveform.at(j)) ? lfpPlot->meanLfpWaveform.at(j) : meanSingleShotLfpData;
-        }
+            meanSingleShotLfpData = lfpPlot->meanLfpWaveform.at(windowStartTimeIndex);
+            int minPointIndex = 0;
+            //search minimum as adjusted in the comboBox
+            for(int j=windowStartTimeIndex; j < windowEndTimeIndex; ++j){
+                minPointIndex = (meanSingleShotLfpData > lfpPlot->meanLfpWaveform.at(j)) ? j : minPointIndex;
+                meanSingleShotLfpData = (meanSingleShotLfpData > lfpPlot->meanLfpWaveform.at(j)) ? lfpPlot->meanLfpWaveform.at(j) : meanSingleShotLfpData;
+            }
 
-        //Calculate the Standard Deviation for the ErrorBar
+            //Calculate the Standard Deviation for the ErrorBar
 
-        //From the minimum of each LFP response;
-        if (numLfpWaveforms >1){
             //From the minimum of each LFP response;
-            for (int i = 0; i < numLfpWaveforms; ++i) {
-                temp_std += (singleShotLfpData[i]-temp_av)*(singleShotLfpData[i]-temp_av);
+            if (numLfpWaveforms >1){
+                int offsetVal = lfpPlot->lfpWaveformIndex - numLfpWaveforms;
+                //From the minimum of mean LFP response;
+                for (int i = 0; i < numLfpWaveforms; ++i) {
+                    stdFromMeanResp += (meanSingleShotLfpData - lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30).at(minPointIndex))*(meanSingleShotLfpData - lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30).at(minPointIndex));
+                }
+                stdFromMeanResp = sqrt(stdFromMeanResp/(numLfpWaveforms-1));
             }
-            temp_std = sqrt(temp_std/(numLfpWaveforms-1));
 
-            int offsetVal = lfpPlot->lfpWaveformIndex - numLfpWaveforms;
-            //From the minimum of mean LFP response;
-            for (int i = 0; i < numLfpWaveforms; ++i) {
-                stdFromMeanResp += (meanSingleShotLfpData - lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30).at(minPointIndex))*(meanSingleShotLfpData - lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30).at(minPointIndex));
-            }
-            stdFromMeanResp = sqrt(stdFromMeanResp/(numLfpWaveforms-1));
+
         }
+    }else if(analysisType==MAX_MIN_DIFFERENCE_ANALYSIS){
+        if(numLfpWaveforms==0){
 
+        }else{
+            for (int i = 0; i < numLfpWaveforms; ++i) {
+                //find min and max for each LFP Waveform recorded and register to singleShotLfpData
+                int offsetVal = lfpPlot->lfpWaveformIndex - numLfpWaveforms;
+                double temp_min = lfpPlot->lfpWaveform.at(i).at(windowStartTimeIndex);
+                double temp_max = lfpPlot->lfpWaveform.at(i).at(windowStartTimeIndex);
+                //search minimum as adjusted in the comboBox
+                for(int j=windowStartTimeIndex ; j < windowEndTimeIndex; ++j){
+                    temp_min = (temp_min > lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30 ).at(j)) ? lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30 ).at(j) : temp_min;
+                    temp_max = (temp_max > lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30 ).at(j)) ?  temp_max : lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30 ).at(j);
+                }
+                singleShotLfpData[i] = temp_max - temp_min;
+                temp_av +=singleShotLfpData[i];
+            }
+            temp_av = temp_av/numLfpWaveforms;
 
+            int minSingleShotLfpData = lfpPlot->meanLfpWaveform.at(windowStartTimeIndex);
+            int maxSingleShotLfpData = lfpPlot->meanLfpWaveform.at(windowStartTimeIndex);
+            int minPointIndex = 0;
+            int maxPointIndex = 0;
+
+            //search minimum as adjusted in the comboBox
+            for(int j=windowStartTimeIndex; j < windowEndTimeIndex; ++j){
+                minPointIndex = (minSingleShotLfpData > lfpPlot->meanLfpWaveform.at(j)) ? j : minPointIndex;
+                maxPointIndex = (maxSingleShotLfpData > lfpPlot->meanLfpWaveform.at(j)) ? maxPointIndex : j ;
+                minSingleShotLfpData = (minSingleShotLfpData > lfpPlot->meanLfpWaveform.at(j)) ? lfpPlot->meanLfpWaveform.at(j) : minSingleShotLfpData;
+                maxSingleShotLfpData = (maxSingleShotLfpData > lfpPlot->meanLfpWaveform.at(j)) ?  maxSingleShotLfpData: lfpPlot->meanLfpWaveform.at(j) ;
+            }
+            meanSingleShotLfpData = maxSingleShotLfpData - minSingleShotLfpData;
+            //Calculate the Standard Deviation for the ErrorBar
+
+            //From the minimum of each LFP response;
+            if (numLfpWaveforms >1){
+                int offsetVal = lfpPlot->lfpWaveformIndex - numLfpWaveforms;
+                //From the minimum of mean LFP response;
+                for (int i = 0; i < numLfpWaveforms; ++i) {
+                    int diff_value = lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30).at(maxPointIndex)-lfpPlot->lfpWaveform.at((i+offsetVal+30) % 30).at(minPointIndex);
+                    stdFromMeanResp += (meanSingleShotLfpData - diff_value)*(meanSingleShotLfpData - diff_value);
+                }
+                stdFromMeanResp = sqrt(stdFromMeanResp/(numLfpWaveforms-1));
+            }
+
+        }
     }
-
     lfpAnalysisData.append(singleShotLfpData);
-    mLfpAnalysisData.append(temp_av);
-    stdLfpAnalysisData.append(temp_std);
+
+    /*mLfpAnalysisData.append(temp_av);
+    stdLfpAnalysisData.append(temp_std);*/
 
 
     meanLfpAnalysisData.append(meanSingleShotLfpData);
@@ -295,12 +353,12 @@ void LfpAnalysisPlot::updateLfpAnalysisPlot()
         }
     }
 
-    painter.setPen(Qt::black);
+    painter.setPen(Qt::blue);
     painter.drawPolyline(polyline, meanLfpAnalysisData.size());
     delete [] polyline;
 
     //Error Bar display calculated from Each LFP minumum
-    QPointF *polyline2 = new QPointF[tScaleInSec];
+    /*QPointF *polyline2 = new QPointF[tScaleInSec];
     for (i = 0; i < mLfpAnalysisData.size(); ++i) {
         polyline2[i] = QPointF(xScaleFactor * i + xOffset, yScaleFactor * mLfpAnalysisData.at(i) + yOffset);
 
@@ -313,7 +371,7 @@ void LfpAnalysisPlot::updateLfpAnalysisPlot()
 
     painter.setPen(Qt::blue);
     painter.drawPolyline(polyline2, mLfpAnalysisData.size());
-    delete [] polyline2;
+    delete [] polyline2; */
 
     update();
 }
@@ -445,8 +503,8 @@ void LfpAnalysisPlot::applyStartProcess(){
     meanLfpAnalysisData.resize(0);
     stdOfmeanLfpAnalysisData.resize(0);
     lfpAnalysisData.resize(0);
-    stdLfpAnalysisData.resize(0);
-    mLfpAnalysisData.resize(0);
+    //stdLfpAnalysisData.resize(0);
+    //mLfpAnalysisData.resize(0);
 
 }
 
@@ -454,6 +512,22 @@ void LfpAnalysisPlot::applyStopProcess(){
     meanLfpAnalysisData.resize(0);
     stdOfmeanLfpAnalysisData.resize(0);
     lfpAnalysisData.resize(0);
-    stdLfpAnalysisData.resize(0);
-    mLfpAnalysisData.resize(0);
+    //stdLfpAnalysisData.resize(0);
+    //mLfpAnalysisData.resize(0);
+}
+
+void LfpAnalysisPlot::setAnalysisWindow(double startInMs, double endInMs){
+    if(startInMs == 0 && endInMs == 0)
+    {
+        windowStartTimeInMs = - (lfpPlot->preTriggerTSteps) * tLfpStepMsec ;
+        windowEndTimeInMs = (lfpPlot->totalTSteps - lfpPlot->preTriggerTSteps)*tLfpStepMsec;
+    }else{
+        windowStartTimeInMs = startInMs;
+        windowEndTimeInMs = endInMs;
+    }
+        setSampleRate(1000/tLfpStepMsec);
+}
+
+void LfpAnalysisPlot::changeAnalysisType(int newType){
+    analysisType = newType;
 }

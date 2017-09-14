@@ -234,6 +234,9 @@ MainWindow::MainWindow()
         }
         fileTemp2.close();
     }
+
+    //after all the channels has been created, The reference channel selection part happens
+    createReferenceChannelScrollOptions();
 }
 
 // Scan SPI Ports A-D to identify all connected RHD2000 amplifier chips.
@@ -299,6 +302,12 @@ void MainWindow::scanPorts()
     changeYScale(yScaleComboBox->currentIndex());
 
     statusBar()->clearMessage();
+
+    //Defaultly enable the channels of digital input
+    for (int i = 0; i < signalSources->signalPort[5].numChannels(); ++i) {
+        signalSources->signalPort[5].channelByNativeOrder(i)->enabled = true;
+    }
+
 }
 
 // Create GUI layout.  We create the user interface (UI) directly with code, so it
@@ -349,6 +358,7 @@ void MainWindow::createLayout()
     displayPortDButton = new QRadioButton(signalSources->signalPort[3].name);
     displayAdcButton = new QRadioButton(signalSources->signalPort[4].name);
     displayDigInButton = new QRadioButton(signalSources->signalPort[5].name);
+
 
     QButtonGroup *displayButtonGroup = new QButtonGroup();
     displayButtonGroup->addButton(displayPortAButton, 0);
@@ -538,6 +548,7 @@ void MainWindow::createLayout()
     connect(lfpScopeButton, SIGNAL(clicked()),
             this, SLOT(lfpScope()));
 
+
     QHBoxLayout *scaleLayout = new QHBoxLayout();
     scaleLayout->addWidget(new QLabel(tr("Time Scale (</>)")));
     scaleLayout->addWidget(tScaleComboBox);
@@ -545,9 +556,19 @@ void MainWindow::createLayout()
     scaleLayout->addWidget(new QLabel(tr("Waveforms ([/])")));
     scaleLayout->addWidget(numFramesComboBox);
 
+    referenceChannelComboBox = new QComboBox;
+    referenceChannelComboBox->addItem("No Reference");
+    connect(referenceChannelComboBox, SIGNAL(currentIndexChanged(int)), this , SLOT(selectReferenceChannel(int)));
+
+    QHBoxLayout *referenceChannelLayout = new QHBoxLayout;
+    referenceChannelLayout->addWidget(new QLabel(tr("Select a Reference Channel for Display:")));
+    referenceChannelLayout->addStretch(1);
+    referenceChannelLayout->addWidget(referenceChannelComboBox);
+
     QVBoxLayout *displayOrderLayout = new QVBoxLayout();
     displayOrderLayout->addLayout(numWaveformsLayout);
     displayOrderLayout->addLayout(scaleLayout);
+    displayOrderLayout->addLayout(referenceChannelLayout);
     displayOrderLayout->addStretch(1);
 
     QVBoxLayout *leftLayout1 = new QVBoxLayout;
@@ -4243,4 +4264,53 @@ void MainWindow::manualCableDelayControl()
 bool MainWindow::isRecording()
 {
     return recording;
+}
+
+void MainWindow::selectReferenceChannel(int index){
+
+    //first identify which SignalChannel is selected
+    SignalChannel *referenceChannel = 0;
+    if(index != referenceChannelComboBox->count()-1){
+        int startIndex = 0;
+        int endIndex = 0;
+        bool condition = false;
+        int iter = 0 ;
+        while(!condition && iter < signalSources->signalPort.size()){
+            endIndex = startIndex + signalSources->signalPort[iter].numAmplifierChannels();
+            condition = (startIndex <= index && endIndex > index);
+            if(condition){
+                referenceChannel = signalSources->signalPort[iter].channelByNativeOrder(index - startIndex);
+            }
+            startIndex = endIndex;
+            iter++;
+        }
+    }
+
+    wavePlot->setReferenceChannel(referenceChannel);
+
+}
+
+void MainWindow::createReferenceChannelScrollOptions(){
+
+    //clear the previous items
+    for(int i = 0 ; i < referenceChannelComboBox->count(); ++i){
+        referenceChannelComboBox->removeItem(0);
+    }
+
+
+    //iterate over all signalChannels added to the signalProcessor contains and add them to the scroll bar if amplifier channel
+    for(int i = 0 ; i < signalSources->signalPort.size(); ++i){
+        if ( signalSources->signalPort[i].numAmplifierChannels() != 0 ) {
+        for (int j = 0 ; j < signalSources->signalPort[i].numAmplifierChannels() ; ++j){//signalSources->signalPort.at(i).numAmplifierChannels(); ++j) {
+            SignalChannel *channel = signalSources->signalPort[i].channelByNativeOrder(j);
+         if(channel->signalType  == AmplifierSignal){
+              referenceChannelComboBox->addItem(channel->nativeChannelName);
+         }
+        }
+        }
+    }
+
+    referenceChannelComboBox->addItem(tr("NO REFERENCE CHANNEL"));
+    referenceChannelComboBox->setCurrentIndex(referenceChannelComboBox->count()-1);
+
 }

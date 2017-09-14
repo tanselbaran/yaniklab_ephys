@@ -72,7 +72,7 @@ LfpScopeDialog::LfpScopeDialog(SignalProcessor *inSignalProcessor, SignalSources
     triggerTypeComboBox = new QComboBox();
     triggerTypeComboBox->addItem(tr("Voltage Threshold"));
     triggerTypeComboBox->addItem(tr("Digital Input"));
-    triggerTypeComboBox->setCurrentIndex(0);
+    triggerTypeComboBox->setCurrentIndex(1);
 
     connect(triggerTypeComboBox, SIGNAL(currentIndexChanged(int)),
             this, SLOT(setTriggerType(int)));
@@ -108,7 +108,7 @@ LfpScopeDialog::LfpScopeDialog(SignalProcessor *inSignalProcessor, SignalSources
     digitalInputComboBox->addItem(tr("Digital Input 13"));
     digitalInputComboBox->addItem(tr("Digital Input 14"));
     digitalInputComboBox->addItem(tr("Digital Input 15"));
-    digitalInputComboBox->setCurrentIndex(0);
+    digitalInputComboBox->setCurrentIndex(1);
 
     connect(digitalInputComboBox, SIGNAL(currentIndexChanged(int)),
             this, SLOT(setDigitalInput(int)));
@@ -208,6 +208,14 @@ LfpScopeDialog::LfpScopeDialog(SignalProcessor *inSignalProcessor, SignalSources
     setVoltageThreshold(thresholdSpinBox->value());
     setDigitalInput(digitalInputComboBox->currentIndex());
     setEdgePolarity(edgePolarityComboBox->currentIndex());
+
+    //set everychannel to default settings of LFP Scope dialog once it is initialized
+    for (int i = 0; i < currentChannel->signalGroup->numChannels(); ++i) {
+        currentChannel->signalGroup->channel[i].voltageTriggerMode = currentChannel->voltageTriggerMode;
+        currentChannel->signalGroup->channel[i].voltageThreshold = currentChannel->voltageThreshold;
+        currentChannel->signalGroup->channel[i].digitalTriggerChannel = currentChannel->digitalTriggerChannel;
+        currentChannel->signalGroup->channel[i].digitalEdgePolarity = currentChannel->digitalEdgePolarity;
+    }
 }
 
 void LfpScopeDialog::changeYScale(int index)

@@ -51,6 +51,8 @@ LfpAnalysisDialog::LfpAnalysisDialog(LfpPlot *inLfpPlot, SignalProcessor *inSign
 
     analysisPlot = new LfpAnalysisPlot(lfpPlot,signalProcessor,currentChannel,this,this);
 
+    isRunning =false;
+
     // Y Scale adjustment;
     yScaleList.append(50);
     yScaleList.append(100);
@@ -149,17 +151,49 @@ LfpAnalysisDialog::LfpAnalysisDialog(LfpPlot *inLfpPlot, SignalProcessor *inSign
     startStopLayout->addWidget(stopButton);
     startStopLayout->addStretch(1);
 
+    QGroupBox *plotScalingsBox = new QGroupBox(tr("Plot Scalings"));
+    QVBoxLayout *plotScalingsLayout = new  QVBoxLayout;
+    plotScalingsLayout->addWidget(yScaleComboBox);
+    plotScalingsLayout->addWidget(tScaleComboBox);
+
+    plotScalingsBox->setLayout(plotScalingsLayout);
+
+    windowForAnalysisComboBox =  new QComboBox;
+    windowForAnalysisComboBox->addItem(tr("0 to +50ms"));
+    windowForAnalysisComboBox->addItem(tr("0 to +100ms"));
+    windowForAnalysisComboBox->addItem(tr("-50 to +50ms"));
+    windowForAnalysisComboBox->addItem(tr("-30 to +70ms"));
+    windowForAnalysisComboBox->addItem(tr("entire LFP region"));
+    windowForAnalysisComboBox->setCurrentIndex(0);
+    windowForAnalysisComboBox->setEnabled(true);
+    connect(windowForAnalysisComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(arrengeSearchForMinWindow(int)));
+
+
+    analysisTypeComboBox = new QComboBox;
+    analysisTypeComboBox->addItem(tr("Min. Point Analysis"));
+    analysisTypeComboBox->addItem(tr("Max - Min Difference Analysis"));
+    analysisTypeComboBox->setCurrentIndex(0);
+    analysisTypeComboBox->setEnabled(true);
+
+    connect(analysisTypeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(setAnalysisType(int)) );
+
+    QGroupBox *analysisSettingsBox = new QGroupBox(tr("Analysis Settings"));
+    QVBoxLayout *analysisSettingsLayout = new QVBoxLayout;
+    analysisSettingsLayout->addWidget(new QLabel(tr("Analysis Type:")));
+    analysisSettingsLayout->addWidget(analysisTypeComboBox);
+    analysisSettingsLayout->addWidget(new QLabel(tr("Window for Analysis:")));
+    analysisSettingsLayout->addWidget(windowForAnalysisComboBox);
+    analysisSettingsBox->setLayout(analysisSettingsLayout);
 
     QVBoxLayout *leftLayout = new QVBoxLayout;
-    leftLayout->addWidget(new QLabel(tr("Plot Scalings:")));
-    leftLayout->addWidget(yScaleComboBox);
-    leftLayout->addWidget(tScaleComboBox);
+    leftLayout->addWidget(plotScalingsBox);
     leftLayout->addWidget(new QLabel(tr("Acquiring Frequency")));
     leftLayout->addWidget(tStepComboBox);
     leftLayout->addWidget(new QLabel(tr("Start/Stop the Analysis")));
     leftLayout->addLayout(startStopLayout);
     leftLayout->addWidget(new QLabel(tr("Display Settings")));
     leftLayout->addWidget(errorbarDisplayChackBox);
+    leftLayout->addWidget(analysisSettingsBox);
     leftLayout->addStretch(1);
 
     QHBoxLayout *mainLayout = new QHBoxLayout;
@@ -196,6 +230,13 @@ void LfpAnalysisDialog::updateWaveform(int numBlocks)
 void LfpAnalysisDialog::setNewChannel(SignalChannel *newSignalChannel)
 {
     currentChannel = newSignalChannel;
+
+    if(isRunning)
+    {
+        stopLfpAnalysis();
+        startLfpAnalysis();
+    }
+
     analysisPlot->setNewChannel(newSignalChannel);
 }
 
@@ -206,19 +247,30 @@ void LfpAnalysisDialog::changeErrorbarState(bool state)
 }
 
 void LfpAnalysisDialog::startLfpAnalysis(){
+
     stopButton->setEnabled(true);
     startButton->setEnabled(false);
+    updateAnalysisPlot();
     tStepTimer->start();
     analysisPlot->applyStartProcess();
-    tStepComboBox->setEnabled(false); //prevent any changes during running
+
+    //prevent any changes during running
+    windowForAnalysisComboBox->setEnabled(false);
+    tStepComboBox->setEnabled(false);
+    isRunning = true;
+    analysisTypeComboBox->setEnabled(false);
 }
 
 void LfpAnalysisDialog::stopLfpAnalysis(){
+    isRunning = false;
     stopButton->setEnabled(false);
     startButton->setEnabled(true);
     tStepTimer->stop();
     analysisPlot->applyStopProcess();
+    windowForAnalysisComboBox->setEnabled(true);
     tStepComboBox->setEnabled(true); //enable modifications in the step size
+    analysisTypeComboBox->setEnabled(true);
+
 }
 
 void LfpAnalysisDialog::changeTStepScale(int index){
@@ -254,3 +306,26 @@ void LfpAnalysisDialog::changeTScale(int index){
 
 }
 
+void LfpAnalysisDialog::arrengeSearchForMinWindow(int index){
+     switch(index){
+        case 0:
+            analysisPlot->setAnalysisWindow(0.0, 50.0);
+            break;
+        case 1:
+            analysisPlot->setAnalysisWindow(0.0, 100.0);
+            break;
+        case 2:
+            analysisPlot->setAnalysisWindow(-50.0, 50.0);
+            break;
+        case 3:
+            analysisPlot->setAnalysisWindow(-30.0, 70);
+        case 4:
+            analysisPlot->setAnalysisWindow(0.0 , 0.0); // equal to 0 input mean entire plot
+            break;
+     }
+ }
+
+void LfpAnalysisDialog::setAnalysisType(int index){
+    analysisType = index;
+    analysisPlot->changeAnalysisType(analysisType);
+}
