@@ -1,10 +1,14 @@
 import numpy as np
 from matplotlib.pyplot import *
+from mpl_toolkits.mplot3d import Axes3D
 from utils.filtering import *
 from utils.load_intan_rhd_format import *
 from utils.reading_utils import *
 from tqdm import tqdm
 from LFPutils.read_evoked_lfp import *
+import pickle as p
+from ipywidgets import interact, IntText, fixed, FloatSlider
+from IPython.display import display
 
 
 ###Utilities for pre-processing data (reading , filtering , thresholding)
@@ -34,6 +38,70 @@ def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_
     global_params['bandfilt'] = bandfilt
 
     return global_params
+
+
+def read_location(dirs, channels, global_params):
+
+    end_times = np.zeros(len(dirs))
+    end_inds = np.zeros(len(dirs))
+    data = np.zeros((len(channels), 0))
+    waveforms = np.zeros((0,len(channels),60))
+    peak_times = np.zeros(0)
+    stim = np.zeros(0)
+    current_end_time = 0
+    time = np.zeros(0)
+
+    for rec in tqdm(range(len(dirs))):
+        mainfolder = dirs[rec]
+        params = {}
+
+        for key in global_params:
+            params[key] = global_params[key]
+
+        params['mainfolder'] = mainfolder
+        params['rhd_path'] = mainfolder + 'info.rhd'
+        params['time_path'] = mainfolder + 'time.dat'
+        params['header'] = read_data(params['rhd_path'])
+        params['time'] = read_time_dat_file(params['time_path'], global_params['sample_rate'])
+        params['channels'] = channels
+        params['stim_path'] = mainfolder + 'board-DIN-01.dat'
+        params['stim'] = read_amplifier_dat_file(params['stim_path'])
+
+        end_times[rec] = params['time'][-1]
+        if rec == 0:
+            time = np.append(time, params['time'])
+        else:
+            time = np.append(time, params['time'] + end_times[rec-1])
+
+        data_electrode = np.zeros((len(params['channels']), len(params['time'])))
+        waveforms_session = np.zeros((0, len(channels), 60))
+        peak_times_session = np.zeros(0)
+
+        for trode in range(len(params['channels'])):
+            filepath = params['mainfolder'] + 'amp-A-0' + str(params['channels'][trode]) + '.dat'
+            data_electrode[trode] = read_amplifier_dat_file(filepath)
+
+        if global_params['spike_sorting'] == True:
+            bandfilt = global_params['bandfilt']
+            filtered_data_electrode = bandfilt(data_electrode)
+            (waveforms_trode, peak_times_trode) = extract_waveforms(filtered_data_electrode, params)
+            waveforms_session = np.append(waveforms_session, waveforms_trode, 0)
+            peak_times_session = np.append(peak_times_session, peak_times_trode + current_end_time)
+
+        data = np.append(data, data_electrode, 1)
+        stim = np.append(stim, params['stim'])
+        waveforms = np.append(waveforms, waveforms_session, 0)
+        peak_times = np.append(peak_times, peak_times_session,0)
+        current_end_time = current_end_time + params['time'][-1]
+        end_inds[rec] = np.sum((end_times*global_params['sample_rate'])[0:rec+1]) + rec
+    end_inds = np.insert(end_inds,0,0)
+
+    if global_params['spike_sorting'] == True:
+        location_output = {'waveforms': waveforms, 'data':data, 'peak_times':peak_times, 'stim':stim, 'time':time, 'end_inds':end_inds}
+    else:
+        location_output = {'data':data, 'stim':stim, 'time':time, 'end_inds':end_inds}
+
+    return location_output
 
 def extract_waveforms(data, params):
 	"""
@@ -81,7 +149,7 @@ def extract_waveforms(data, params):
 		if found and (i > len(params['spike_timerange'])):
 			waveform = np.zeros((len(params['channels']), len(params['spike_timerange'])))
 			for trode in range(len(params['channels'])):
-				waveform[trode,:] = data[trode, (i-params['pre']*params['sample_rate']/1000):(i+params['post']*params['sample_rate']/1000)]
+				waveform[trode,:] = data[trode, (i-int(params['pre']*params['sample_rate']/1000)):(i+int(params['post']*params['sample_rate']/1000))]
 			waveforms.append(waveform)
 			peak_times.append(params['time'][i])
 			found = False
@@ -90,63 +158,6 @@ def extract_waveforms(data, params):
 	peak_times = np.asarray(peak_times)
 	return waveforms, peak_times
 
-def read_location(dirs, channels, global_params):
-
-    end_times = np.zeros(len(dirs))
-    end_inds = np.zeros(len(dirs))
-    data = np.zeros((len(channels), 0))
-    waveforms = np.zeros((0,len(channels),60))
-    peak_times = np.zeros(0)
-    stim = np.zeros(0)
-    current_end_time = 0
-    time = np.zeros(0)
-
-    for rec in tqdm(range(len(dirs))):
-        mainfolder = dirs[rec]
-        params = {}
-
-        for key in global_params:
-            params[key] = global_params[key]
-
-        params['mainfolder'] = mainfolder
-        params['rhd_path'] = mainfolder + 'info.rhd'
-        params['time_path'] = mainfolder + 'time.dat'
-        params['header'] = read_data(params['rhd_path'])
-        params['time'] = read_time_dat_file(params['time_path'], global_params['sample_rate'])
-        params['channels'] = channels
-        params['stim_path'] = mainfolder + 'board-DIN-01.dat'
-        params['stim'] = read_amplifier_dat_file(params['stim_path'])
-
-        end_times[rec] = params['time'][-1]
-        if rec == 0:
-            time = np.append(time, params['time'])
-        else:
-            time = np.append(time, params['time'] + end_times[rec-1])
-
-        data_electrode = np.zeros((len(params['channels']), len(params['time'])))
-        for trode in range(len(params['channels'])):
-            filepath = params['mainfolder'] + 'amp-' + params['header']['amplifier_channels'][params['channels'][trode]]['native_channel_name'] + '.dat'
-            data_electrode[trode] = read_amplifier_dat_file(filepath)
-
-        if global_params['spike_sorting'] == True:
-            bandfilt = global_params['bandfilt']
-            filtered_data_electrode = bandfilt(data_electrode)
-            (waveforms_trode, peak_times_trode) = extract_waveforms(filtered_data_electrode, params)
-            waveforms = np.append(waveforms, waveforms_trode, 0)
-            peak_times = np.append(peak_times, peak_times_trode + current_end_time)
-
-        data = np.append(data, data_electrode, 1)
-        stim = np.append(stim, params['stim'])
-        current_end_time = current_end_time + params['time'][-1]
-        end_inds[rec] = np.sum((end_times*global_params['sample_rate'])[0:rec+1]) + rec
-    end_inds = np.insert(end_inds,0,0)
-
-    if global_params['spike_sorting'] == True:
-        location_output = {'waveforms': waveforms, 'data':data, 'peak_times':peak_times, 'stim':stim, 'time':time, 'end_inds':end_inds}
-    else:
-        location_output = {'data':data, 'stim':stim, 'time':time, 'end_inds':end_inds}
-
-    return location_output
 
 def surface_evoked_LFP(location_output, begin, end, global_params, mode):
     if mode == 'evoked':
@@ -169,7 +180,7 @@ def get_unit_indices(units, clusters):
             cluster_indices = np.where(clusters.labels_ == units[unit][cluster])
             unit_idx = np.append(unit_idx, cluster_indices)
         unit_idx = unit_idx.astype('int')
-    unit_indices[unit] = unit_idx
+        unit_indices[unit] = unit_idx
 
     return unit_indices
 
@@ -178,11 +189,11 @@ def get_unit_spike_times_and_trains(unit_indices, time, peak_times, global_param
     spike_trains = np.zeros((len(unit_indices), len(time)))
 
     for unit in range(len(unit_indices)):
-        spike_times = peak_times[unit_indices[unit]]
-        spike_times = np.asarray(spike_times * params['sample_rate'])
-        spike_times = spike_times.astype(int)
-        spike_times_all[unit] = np.sort(spike_times)
-        spike_trains[unit][spike_times] = 1
+        spike_times_ind = peak_times[unit_indices[unit]]
+        spike_times_ind = np.asarray(spike_times_ind * global_params['sample_rate'])
+        spike_times_ind = spike_times_ind.astype(int)
+        spike_times[unit] = np.sort(spike_times_ind)
+        spike_trains[unit][spike_times_ind] = 1
 
     return spike_times, spike_trains
 
@@ -227,14 +238,14 @@ def plot_waveforms(index, waveforms, plot_params, params):
 	fig, axs = subplots(plot_params['nrow'], plot_params['ncol'])
 	channel = 0
 	for i, ax in enumerate(fig.axes):
-		ax.plot(params['spike_timerange'], waveforms[index, channel])
+		ax.plot(global_params['spike_timerange'], waveforms[index, channel])
 		ax.set_ylim(plot_params['ylim'])
 		ax.set_xlabel('Time (ms)')
 		ax.set_ylabel('Voltage (uV)')
 		channel = channel+1
 	show()
 
-def plot_mean_cluster_waveforms(cluster, clusters, waveforms, plot_params, params, mode):
+def plot_mean_cluster_waveforms(cluster, clusters, waveforms, plot_params, global_params, mode):
 	"""
 	This function serves as the interactive function for the widget for displaying waveforms across multiple channels.
 
@@ -260,17 +271,17 @@ def plot_mean_cluster_waveforms(cluster, clusters, waveforms, plot_params, param
 	fig, axs = subplots(plot_params['nrow'], plot_params['ncol'])
 	channel = 0
 	for i, ax in enumerate(fig.axes):
-		ax.plot(params['spike_timerange'], mean_spikes_in_cluster[channel])
+		ax.plot(global_params['spike_timerange'], mean_spikes_in_cluster[channel])
 		if mode == 'ind_on':
 			for spike in range(len(spikes_in_cluster)):
-				ax.plot(params['spike_timerange'], spikes_in_cluster[spike,i], 'b', alpha = 0.1)
+				ax.plot(global_params['spike_timerange'], spikes_in_cluster[spike,i], 'b', alpha = 0.1)
 		ax.set_ylim(plot_params['ylim'])
 		ax.set_xlabel('Time (ms)')
 		ax.set_ylabel('Voltage (uV)')
 		channel = channel + 1
 	show()
 
-def plot_3d_of_clusters(clusters, projection):
+def plot_3d_of_clusters(clusters, projection, global_params):
 	"""
 	This function makes a 3d scatter plot of the projections of the spike waveforms  onto the 3 principal axes that count for the highest fraction of variance in the original waveforms array. The scatter points are colored with respect to the clusters that each spike waveform belongs to.
 
@@ -278,13 +289,12 @@ def plot_3d_of_clusters(clusters, projection):
 		clusters: KMeans object that contains information about the results of the K-means clustering of the waveforms projected on the principal component axes
 		projection: 2d numpy array (# of spike_events x # of PCA axes) that contains the projections of the spike waveforms on the PCA axes
 	"""
-	cycol = cycle('bgrcmywk')
 
 	fig = figure()
 	ax = fig.add_subplot(111, projection = '3d')
 	for cluster in range(clusters.n_clusters):
 		cluster_indices = np.where(clusters.labels_ == cluster)
-		ax.scatter(projection[:,0][cluster_indices], projection[:,1][cluster_indices], projection[:,2][cluster_indices], c=next(cycol))
+		ax.scatter(projection[:,0][cluster_indices], projection[:,1][cluster_indices], projection[:,2][cluster_indices], global_params['colors'][cluster])
 	show()
 
 def plot_psth(unit, rec, spike_trains, stim, bin_size):
@@ -313,19 +323,20 @@ def plot_spike_train(spike_trains, time, stim):
     axs[1].plot(time, stim)
     show()
 
-def plot_spikes_on_data(spike_times, data, stim, global_params):
-    for i in range(len(global_params['channels'])):
-        fig, axs = subplots(len(global_params['channels']), sharex = 'all', sharey = 'all', figsize = (10,10))
-        axs[i].plot(time, data[i,:])
-        for spike_ind in spike_times[unit]:
-            axs[i].plot(np.arange(spike_ind-16, spike_ind+24) * (1/global_params['sample_rate']), data[i,spike_ind-16:spike_ind+24], color = global_params['colors'][unit])
-        axs[i].set_xlabel('Time (s)')
-        axs[i].set_ylabel('Voltage (uv)')
+def plot_spikes_on_data(spike_times, location_output, global_params, units, channels):
+    fig, axs = subplots(len(channels), sharex = 'all', sharey = 'all', figsize = (10,10), squeeze = False)
+    for i in range(len(channels)):
+        axs[i,0].plot(location_output['time'], location_output['data'][i,:])
+        for unit in range(len(units)):
+            for spike_ind in spike_times[unit]:
+                axs[i,0].plot(np.arange(spike_ind-16, spike_ind+24) * (1/global_params['sample_rate']), location_output['data'][i,spike_ind-16:spike_ind+24], color = global_params['colors'][unit])
+        axs[i,0].set_xlabel('Time (s)')
+        axs[i,0].set_ylabel('Voltage (uv)')
     show()
 
 ### IPython widget utilities for interactivity
 
-def display_widget(waveforms, plot_params, params, mode, *args):
+def display_widget(waveforms, plot_params, global_params, mode, *args):
 	"""
 	This function creates and displays the widget for selecting the waveform or cluster index to be displayed and the widget that displays
 	the waveforms or mean waveforms for the clusters across multiple channels for this index.
@@ -344,7 +355,7 @@ def display_widget(waveforms, plot_params, params, mode, *args):
 
 		#Widget for plotting selected waveforms or mean waveforms
 		widget = interact(plot_waveforms, index = selectionWidget,
-			waveforms = fixed(waveforms), plot_params = fixed(plot_params), params = fixed(params))
+			waveforms = fixed(waveforms), plot_params = fixed(plot_params), global_params = fixed(global_params))
 	elif mode[0] == 'clusters':
 		#Widget for selecting waveform or cluster index
 		selectionWidget = IntText(min=0, max=len(waveforms), step = 1, value = 0,
@@ -353,7 +364,7 @@ def display_widget(waveforms, plot_params, params, mode, *args):
 		#Widget for plotting selected waveforms or mean waveforms
 		widget = interact(plot_mean_cluster_waveforms, cluster = selectionWidget,
 			clusters = fixed(args[0]), waveforms = fixed(waveforms),
-			plot_params = fixed(plot_params), params = fixed(params), mode = mode[1])
+			plot_params = fixed(plot_params), global_params = fixed(global_params), mode = mode[1])
 	else:
 		raise ValueError('Please select a valid mode for display ("waveforms" or "clusters")')
 
