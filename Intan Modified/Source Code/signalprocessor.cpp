@@ -1920,4 +1920,3 @@ void SignalProcessor::tempHistoryCalcAvg()
         }
     }
 }
-

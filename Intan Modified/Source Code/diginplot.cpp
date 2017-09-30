@@ -379,7 +379,7 @@ void DigInPlot::updateDigInPlot(double rms)
         for (j = digInWaveformIndex - numDigInWaveforms; j < digInWaveformIndex; ++j) {
             // Build waveform
             for (i = 0; i < totalTSteps; ++i) {
-                polyline[i] = QPointF(xScaleFactor * i + xOffset, yScaleFactor * digInWaveform.at((j + 30) % digInWaveform.size()).at(i) + yOffset);
+                polyline[i] = QPointF(xScaleFactor * i + xOffset, (2.0/3.0)*yScaleFactor * digInWaveform.at((j + 30) % digInWaveform.size()).at(i) + yOffset);
             }
 
             // Draw waveform
@@ -392,11 +392,11 @@ void DigInPlot::updateDigInPlot(double rms)
     if(showAverageInPlot){
         // Build waveform
         for (i = 0; i < totalTSteps; ++i) {
-            polyline[i] = QPointF(xScaleFactor * i + xOffset, yScaleFactor * meanDigInWaveform.at(i) + yOffset);
+            polyline[i] = QPointF(xScaleFactor * i + xOffset, (2.0/3.0)*yScaleFactor * meanDigInWaveform.at(i) + yOffset);
         }
 
         // Draw
-        painter.setPen(Qt::black);
+        painter.setPen(Qt::red);
         painter.drawPolyline(polyline, totalTSteps);
     }
     painter.setClipping(false);

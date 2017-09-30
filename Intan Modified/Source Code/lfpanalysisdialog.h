@@ -25,6 +25,7 @@
 #include <QDialog>
 #include <QtGui>
 
+
 using namespace std;
 
 class QPushButton;
@@ -63,8 +64,12 @@ private slots:
     void stopLfpAnalysis();
     void updateAnalysisPlot();
     void changeTStepScale(int index);
+    void arrengeSearchForMinWindow(int index);
+    void setAnalysisType(int index);
+
 private:
 
+    int analysisType;
 
     QVector<int> yScaleList;
     QVector<int> tScaleList;
@@ -75,10 +80,14 @@ private:
     double tScaleInSeconds;
 
     bool errorbarState;
+    bool isRunning;
 
     QComboBox *yScaleComboBox;
     QComboBox *tScaleComboBox;
     QComboBox *tStepComboBox;
+    QComboBox *windowForAnalysisComboBox;
+    QComboBox *analysisTypeComboBox;
+
 
     QPushButton *startButton;
     QPushButton *stopButton;

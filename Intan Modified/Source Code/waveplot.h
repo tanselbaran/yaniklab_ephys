@@ -63,9 +63,6 @@ public:
     void setImpedanceLabels(bool enabled);
     void setPointPlotMode(bool enabled);
 
-    //implemented as an expansion
-    void setNewSelectedChannel(SignalChannel *newSelectedChannel);
-    void arrengeDisplayOrder( QVector<int> channelNumbersForMapping);
 
     int setNumFrames(int index);
     int setNumFrames(int index, int port);
@@ -81,6 +78,16 @@ public:
     QSize sizeHint() const;
     
     SignalSources* getSignalSources();
+
+
+    //implemented as an expansion
+    void setNewSelectedChannel(SignalChannel *newSelectedChannel);
+    void arrengeDisplayOrder( QVector<int> channelNumbersForMapping);
+
+    SignalChannel *referenceChannel; //it is used to subtract for difference display in waveplot
+    void setReferenceChannel(SignalChannel *newReferenceChannel);  //sets a new reference channel
+
+
 signals:
     void selectedChannelChanged(SignalChannel* newChannel);
     void channelOrderRestored();

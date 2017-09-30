@@ -69,6 +69,8 @@ public:
     int maxNumLfpWaveforms;
     int totalTSteps;
     int lfpWaveformIndex;
+    int preTriggerTSteps;
+    double tStepMsec;
 signals:
     
 public slots:
@@ -97,7 +99,6 @@ private:
     int digitalTriggerChannel;
     bool digitalEdgePolarity;
 
-    int preTriggerTSteps;
     int bufferIndex;
     int bufferSizeUsed;
     bool startingNewChannel;
@@ -110,7 +111,6 @@ private:
 
     QRect frame;
 
-    double tStepMsec;
     int yScale;
     double savedRms;
 

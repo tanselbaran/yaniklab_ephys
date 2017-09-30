@@ -60,6 +60,9 @@ WavePlot::WavePlot(SignalProcessor *inSignalProcessor, SignalSources *inSignalSo
 
     impedanceLabels = false;
     pointPlotMode = false;
+
+    //set reference Channel to point null
+    referenceChannel = 0;
 }
 
 // Initialize WavePlot object.
@@ -846,6 +849,9 @@ void WavePlot::drawWaveforms()
     QPainter painter(&pixmap);
     painter.initFrom(this);
 
+    //expansion
+    int refStream, refChannel; //reference channel definitions
+
     int length = Rhd2000DataBlock::getSamplesPerDataBlock() * numUsbBlocksToPlot;
 
     QPointF *polyline = new QPointF[length + 1];
@@ -853,6 +859,12 @@ void WavePlot::drawWaveforms()
     // Assume all frames are the same size.
     yAxisLength = (frameList[numFramesIndex[selectedPort]][0].height() - 2) / 2.0;
     tAxisLength = frameList[numFramesIndex[selectedPort]][0].width() - 1;
+
+    // define properties if referenceChannel is pointing to a value
+    if(referenceChannel){
+            refStream = referenceChannel->boardStream;
+            refChannel = referenceChannel->chipChannel;
+    }
 
     for (j = 0; j < frameList[numFramesIndex[selectedPort]].size(); ++j) {
         stream = selectedChannel(j + topLeftFrame[selectedPort])->boardStream;
@@ -887,9 +899,13 @@ void WavePlot::drawWaveforms()
 
                 // build waveform
                 for (i = 0; i < length; ++i) {
+                    int displayValue = (referenceChannel== 0 ) ?
+                                signalProcessor->amplifierPostFilter.at(stream).at(channel).at(i) :
+                                   (signalProcessor->amplifierPostFilter.at(stream).at(channel).at(i) -
+                                     signalProcessor->amplifierPostFilter.at(refStream).at(refChannel).at(i) );
                     polyline[i+1] =
                             QPointF(xScaleFactor * i + xOffset,
-                                    yScaleFactor * signalProcessor->amplifierPostFilter.at(stream).at(channel).at(i) + yOffset);
+                                    yScaleFactor * displayValue + yOffset);
                 }
 
                 // join to old waveform
@@ -902,8 +918,12 @@ void WavePlot::drawWaveforms()
                 }
 
                 // save last point in waveform to join to next segment
+                int displayValue = (referenceChannel == 0 ) ?
+                            signalProcessor->amplifierPostFilter.at(stream).at(channel).at(length-1) :
+                               (signalProcessor->amplifierPostFilter.at(stream).at(channel).at( length -1 ) -
+                                 signalProcessor->amplifierPostFilter.at(refStream).at(refChannel).at( length -1 ) );
                 plotDataOld[j + topLeftFrame[selectedPort]] =
-                        signalProcessor->amplifierPostFilter.at(stream).at(channel).at(length - 1);
+                        displayValue;
 
                 // draw waveform
                 painter.setPen(Qt::blue);
@@ -1246,4 +1266,7 @@ void WavePlot::arrengeDisplayOrder( QVector<int> channelNumbersForMapping){
     }
 
     refreshScreen();
+}
+void WavePlot::setReferenceChannel(SignalChannel *newReferenceChannel){
+    referenceChannel = newReferenceChannel;
 }
