@@ -6,6 +6,9 @@ from utils.reading_utils import *
 from tqdm import tqdm
 from LFPutils.read_evoked_lfp import *
 
+
+###Utilities for pre-processing data (reading , filtering , thresholding)
+
 def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_cutoff = 300., sample_rate = 30000., pre = 0.8, post = 1.2, threshold_coeff = 5, artefact_limit = 20, cut_beginning = 1, cut_end = 1, evoked_pre = 0.05, evoked_post = 0.2, colors = ['xkcd:purple', 'xkcd:green', 'xkcd:pink', 'xkcd:brown', 'xkcd:red', 'xkcd:yellow', 'xkcd:bright green', 'xkcd:cyan', 'xkcd:black', 'xkcd:light orange'], spike_sorting = True, mode = 'Continuous'):
     spike_timerange = np.arange(-pre, post, (1000.0/sample_rate))
 
@@ -31,6 +34,61 @@ def initialize_global_params(filter_type = 'bandpass', high_cutoff = 3000., low_
     global_params['bandfilt'] = bandfilt
 
     return global_params
+
+def extract_waveforms(data, params):
+	"""
+	This function extracts waveforms from multiple channel data based on the
+	given threshold coefficient. A relative threshold is calculated by
+	multiplying the rms of the recording with the given threshold coefficient.
+	For each time step the function scans through all the electrodes to find an
+	event of threshold crossing. If so, the waveforms in all channels surrounding
+	that time step are recorded.
+
+	Inputs:
+		data: Numpy array containing the bandpass filtered data in the form of
+			(N_electrodes x N_time steps)
+		params: Dictionary containing the recording parameters. The following
+			entries must be present:
+
+			sample_rate: Sampling rate in Hz
+			time: Time array of the recording (numpy array)
+			pre: Extent of the spike time window prior to peak (in ms)
+			post: Extent of the spike time window post the peak (in ms)
+			flat_map_array: Flattened numpy array containing the spatial
+				information of the electrodes (contains only one element
+				for single channel recordings)
+			threshold_coeff: Coefficient used for calculating the threshold
+				value per channel
+
+	Outputs:
+		waveforms: Numpy array containing the extracted waveforms from all
+			channels (N_events x N_electrodes x N_timesteps_in_spike_time_range)
+		peak_times: numpy array containing the times of the events (in s)
+			(1xN_events)
+	"""
+
+	noise = np.sqrt(np.mean(np.square(data), 1))
+	threshold = (-1) * noise * params['threshold_coeff']
+
+	waveforms = []
+	peak_times = []
+	found = False
+	for i in tqdm(range(len(params['time'])-40)):
+		for trode in range(len(params['channels'])):
+			if (data[trode,i] < threshold[trode]) and (abs(data[trode,i]) > abs(data[trode,i-1])) and (abs(data[trode,i]) > abs(data[trode,i+1])):
+				found = True
+				break
+		if found and (i > len(params['spike_timerange'])):
+			waveform = np.zeros((len(params['channels']), len(params['spike_timerange'])))
+			for trode in range(len(params['channels'])):
+				waveform[trode,:] = data[trode, (i-params['pre']*params['sample_rate']/1000):(i+params['post']*params['sample_rate']/1000)]
+			waveforms.append(waveform)
+			peak_times.append(params['time'][i])
+			found = False
+
+	waveforms = np.asarray(waveforms)
+	peak_times = np.asarray(peak_times)
+	return waveforms, peak_times
 
 def read_location(dirs, channels, global_params):
 
@@ -159,6 +217,88 @@ def get_firing_rate(unit, rec, spike_trains):
     firing_rate = np.sum(spike_trains[unit][int(end_inds[i]):int(end_inds[i+1])]) / rec_time_len
     return firing_rate
 
+### Utilites for plotting
+
+def plot_waveforms(index, waveforms, plot_params, params):
+	"""
+	This function serves as the interactive function for the widget for displaying waveforms across multiple channels.
+
+	Inputs:
+		index: Index of the waveform to be displayed [int]
+		waveforms: Numpy array containing the waveforms; in the form of (N_events x N_electrodes x N_spike_time_range_steps)
+		mapping: Mapping attribute in the h5 data
+		plot_params: Dictionary containing parameters related to plotting. Must contain following entries:
+			nrow: Number of rows in the subplot grid
+			ncol: Number of columns in the subplot grid
+			ylim: Limits of the y axis for all electrodes, in the form of [ymin, ymax]
+		params: Dictionary containing recording parameters
+			flat_map_array: Flattened numpy array containing the spatial mapping information of the electrodes
+			spike_timerange: Array containing the time range of the spike time window
+	"""
+
+	fig, axs = subplots(plot_params['nrow'], plot_params['ncol'])
+	channel = 0
+	for i, ax in enumerate(fig.axes):
+		ax.plot(params['spike_timerange'], waveforms[index, channel])
+		ax.set_ylim(plot_params['ylim'])
+		ax.set_xlabel('Time (ms)')
+		ax.set_ylabel('Voltage (uV)')
+		channel = channel+1
+	show()
+
+def plot_mean_cluster_waveforms(cluster, clusters, waveforms, plot_params, params, mode):
+	"""
+	This function serves as the interactive function for the widget for displaying waveforms across multiple channels.
+
+	Inputs:
+		cluster: Index of the cluster for which the waveforms to be displayed [int]
+		clusters: Result of the k-means clustering on the projection of the waveforms on the principal component axes
+		waveforms: Numpy array containing the waveforms; in the form of (N_events x N_electrodes x N_spike_time_range_steps)
+		mapping: Mapping attribute in the h5 data
+		plot_params: Dictionary containing parameters related to plotting. Must contain following entries:
+			nrow: Number of rows in the subplot grid
+			ncol: Number of columns in the subplot grid
+			ylim: Limits of the y axis for all electrodes, in the form of [ymin, ymax]
+		params: Dictionary containing recording parameters
+			flat_map_array: Flattened numpy array containing the spatial mapping information of the electrodes
+			spike_timerange: Array containing the time range of the spike time window
+		mode: Plot the mean waveform with or without the individual waveforms ('ind_on' for displaying the individual waveforms, 'ind_off' for not displaying them)
+	"""
+
+	#Selecting the spike waveforms that belong to the selected cluster and calculating the mean waveform at each electrode
+	spikes_in_cluster = waveforms[np.where(clusters.labels_ == cluster)]
+	mean_spikes_in_cluster = np.mean(spikes_in_cluster, 0)
+
+	fig, axs = subplots(plot_params['nrow'], plot_params['ncol'])
+	channel = 0
+	for i, ax in enumerate(fig.axes):
+		ax.plot(params['spike_timerange'], mean_spikes_in_cluster[channel])
+		if mode == 'ind_on':
+			for spike in range(len(spikes_in_cluster)):
+				ax.plot(params['spike_timerange'], spikes_in_cluster[spike,i], 'b', alpha = 0.1)
+		ax.set_ylim(plot_params['ylim'])
+		ax.set_xlabel('Time (ms)')
+		ax.set_ylabel('Voltage (uV)')
+		channel = channel + 1
+	show()
+
+def plot_3d_of_clusters(clusters, projection):
+	"""
+	This function makes a 3d scatter plot of the projections of the spike waveforms  onto the 3 principal axes that count for the highest fraction of variance in the original waveforms array. The scatter points are colored with respect to the clusters that each spike waveform belongs to.
+
+	Inputs:
+		clusters: KMeans object that contains information about the results of the K-means clustering of the waveforms projected on the principal component axes
+		projection: 2d numpy array (# of spike_events x # of PCA axes) that contains the projections of the spike waveforms on the PCA axes
+	"""
+	cycol = cycle('bgrcmywk')
+
+	fig = figure()
+	ax = fig.add_subplot(111, projection = '3d')
+	for cluster in range(clusters.n_clusters):
+		cluster_indices = np.where(clusters.labels_ == cluster)
+		ax.scatter(projection[:,0][cluster_indices], projection[:,1][cluster_indices], projection[:,2][cluster_indices], c=next(cycol))
+	show()
+
 def plot_psth(unit, rec, spike_trains, stim, bin_size):
     psth_range = np.arange(-50,200,bin_size)
     stim_inds = get_stim_inds(stim)
@@ -194,3 +334,40 @@ def plot_spikes_on_data(spike_times, data, stim, global_params):
         axs[i].set_xlabel('Time (s)')
         axs[i].set_ylabel('Voltage (uv)')
     show()
+
+### IPython widget utilities for interactivity
+
+def display_widget(waveforms, plot_params, params, mode, *args):
+	"""
+	This function creates and displays the widget for selecting the waveform or cluster index to be displayed and the widget that displays
+	the waveforms or mean waveforms for the clusters across multiple channels for this index.
+
+	Inputs:
+		waveforms: Numpy array containing the waveforms; in the form of (N_events x N_electrodes x N_spike_time_range_steps )
+		plot_params: see above
+		mapping: Mapping attribute in the h5 data
+		params: see above
+		mode: 'waveforms' for displaying individual waveforms by index, 'clusters' for displaying the mean waveform of a cluster
+	"""
+	if mode[0] == 'waveforms':
+		#Widget for selecting waveform or cluster index
+		selectionWidget = IntText(min=0, max=len(waveforms), step = 1, value = 0,
+			description = "Waveforms to be displayed", continuous_update = True)
+
+		#Widget for plotting selected waveforms or mean waveforms
+		widget = interact(plot_waveforms, index = selectionWidget,
+			waveforms = fixed(waveforms), plot_params = fixed(plot_params), params = fixed(params))
+	elif mode[0] == 'clusters':
+		#Widget for selecting waveform or cluster index
+		selectionWidget = IntText(min=0, max=len(waveforms), step = 1, value = 0,
+			description = "Cluster for which the waveforms to be displayed", continuous_update = True)
+
+		#Widget for plotting selected waveforms or mean waveforms
+		widget = interact(plot_mean_cluster_waveforms, cluster = selectionWidget,
+			clusters = fixed(args[0]), waveforms = fixed(waveforms),
+			plot_params = fixed(plot_params), params = fixed(params), mode = mode[1])
+	else:
+		raise ValueError('Please select a valid mode for display ("waveforms" or "clusters")')
+
+	display(selectionWidget)
+	display(widget)
