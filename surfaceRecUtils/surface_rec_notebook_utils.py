@@ -158,6 +158,9 @@ def surface_evoked_LFP(location_output, begin, end, global_params, mode):
     evoked = read_evoked_lfp_from_stim_timestamps(filtered_data, begin, end, stim_timestamps, global_params)
     return evoked
 
+
+### Utilities for processing the units
+
 def get_unit_indices(units, clusters):
     unit_indices = {}
     for unit in range(len(units)):
@@ -169,21 +172,6 @@ def get_unit_indices(units, clusters):
     unit_indices[unit] = unit_idx
 
     return unit_indices
-
-def plot_unit_waveforms(unit, unit_indices, waveforms, global_params, plot_params):
-    spikes_in_unit = better_waveforms[unit_indices[unit]]
-    mean_spikes_in_unit = np.mean(spikes_in_unit, 0)
-    fig, axs = subplots(plot_params['nrow'], plot_params['ncol'])
-    channel = 0
-    for i, ax in enumerate(fig.axes):
-        ax.plot(global_params['spike_timerange'], mean_spikes_in_unit[channel])
-        for spike in range(len(spikes_in_unit)):
-            ax.plot(params['spike_timerange'], spikes_in_unit[spike,i], 'b', alpha=0.1)
-        ax.set_ylim(plot_params['ylim'])
-        ax.set_xlabel('Time (ms)')
-        ax.set_ylabel('Voltage (uV)')
-        channel = channel + 1
-    show()
 
 def get_unit_spike_times_and_trains(unit_indices, time, peak_times, global_params):
     spike_times = {}
@@ -371,3 +359,34 @@ def display_widget(waveforms, plot_params, params, mode, *args):
 
 	display(selectionWidget)
 	display(widget)
+
+### Utilities for long-term storage and retrieval of the analysis results
+
+def save_clusters_to_pickle(clusters, projection, filepath):
+	p.dump({'clusters': clusters, 'projection': projection}, open(filepath, 'wb'))
+
+def save_reclusters_to_pickle(clusters, waveforms, projection, peak_times, filepath):
+	p.dump({'clusters': clusters, 'waveforms': waveforms, 'peak_times': peak_times, 'projection': projection}, open(filepath, 'wb'))
+
+def read_clusters_from_pickle(filepath):
+	cluster_dict = p.load(open(filepath, 'rb'))
+	clusters = cluster_dict['clusters']
+	projection = cluster_dict['projection']
+	return clusters, projection
+
+def read_reclusters_from_pickle(filepath):
+	cluster_dict = p.load(open(filepath, 'rb'))
+	clusters = cluster_dict['clusters']
+	waveforms = cluster_dict['waveforms']
+	peak_times = cluster_dict['peak_times']
+	projection = cluster_dict['projection']
+	return clusters, waveforms, peak_times, projection
+
+def save_waveforms_to_pickle(waveforms, peak_times, filepath):
+	p.dump({'waveforms': waveforms, 'peak_times': peak_times}, open(filepath, 'wb'))
+
+def read_waveforms_from_pickle(filepath):
+	waveforms_dict = p.load(open(filepath, 'rb'))
+	waveforms = waveforms_dict['waveforms']
+	peak_times = waveforms_dict['peak_times']
+	return waveforms, peak_times
