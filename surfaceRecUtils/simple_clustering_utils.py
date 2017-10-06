@@ -1,3 +1,7 @@
+from matplotlib.mlab import PCA
+from sklearn.cluster import KMeans
+from surfaceRecUtils.surface_rec_notebook_utils import *
+
 def PCA_on_waveforms(waveforms, minfrac, params):
 	"""
 	This function performs principal component analysis on the spike waveforms extracted and returns the
@@ -14,16 +18,20 @@ def PCA_on_waveforms(waveforms, minfrac, params):
 	Outputs:
 		projection: Waveforms projected on the principal component axes
 	"""
-	peak_of_spike_time_range = (len(params['spike_timerange']) / 2) + 1
+	"""peak_of_spike_time_range = (len(params['spike_timerange']) / 2) + 1
 	peaks = waveforms[:,:,peak_of_spike_time_range]
 
 	true_electrode_inds = np.where(peaks[0] != 0) #Eliminating the broken or absent electrodes on the grid (for which the voltage equals 0 all the time) in order to avoid their contamination on the PCA.
 	waveforms_true = waveforms[:,true_electrode_inds] #Waveforms from absent electrodes eliminated
 	n_dimensions = len(true_electrode_inds[0]) * len(params['spike_timerange']) #Number of dimensions before dimensionality reduction
 	waveforms_true = waveforms_true.reshape(len(peaks),n_dimensions) #Reshaping the array with respect to initial number of dimensions
-	results = PCA(waveforms_true)
-	projection = results.project(waveforms_true, minfrac)
+	results = PCA(waveforms_true)"""
 
+	n_dimensions = len(waveforms[0]) * len(params['spike_timerange'])
+	waveforms = waveforms.reshape(len(waveforms), n_dimensions)
+	results = PCA(waveforms)
+	#projection = results.project(waveforms_true, minfrac)
+	projection = results.project(waveforms, minfrac)
 	return projection
 
 def kmeans_clusters(num_clusters, projection):
@@ -46,7 +54,7 @@ def kmeans_clusters(num_clusters, projection):
 def PCA_and_cluster(waveforms, params, minfrac, num_clusters):
 	projection = PCA_on_waveforms(waveforms, 0.01, params)
 	clusters = kmeans_clusters(num_clusters, projection)
-	plot_3d_of_clusters(clusters, projection)
+	#plot_3d_of_clusters(clusters, projection, params)
 
 	return clusters, projection
 
