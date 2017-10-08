@@ -94,7 +94,7 @@ def get_psth(spike_times, stim, bounds, end_inds, bin_size, sample_rate):
 
     return evoked_psth
 
-def plot_firing_histogram(hist, unit, bin_size, end_inds):
+def plot_firing_histogram(hist, unit, bin_size, end_inds, sample_rate):
     """
     This function plots the firing rate for a given unit.
 
@@ -106,8 +106,8 @@ def plot_firing_histogram(hist, unit, bin_size, end_inds):
     """
 
     figure()
-    plot(range(0,len(hist)*bin_size, bin_size), hist/bin_size)
-    for i in range(len(end_inds)):
+    plot(np.arange(0,len(hist[unit])*bin_size, bin_size), hist[unit]/bin_size)
+    for i in range(len(end_inds)-1):
         axvline(end_inds[i+1]/sample_rate, color = 'r', linestyle = 'dashed')
     xlabel('Time (s)')
     ylabel('Firing rate (Hz)')
