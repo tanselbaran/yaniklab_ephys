@@ -8,8 +8,11 @@ Contains the functions for assessing the quality of clustering.
 
 import numpy as np
 from matplotlib.pyplot import *
+import math
+from scipy.spatial.distance import mahalanobis
 
-def unit_waveform_stdevs(clusters, waveforms, params):
+
+def cluster_waveform_stdevs(clusters, waveforms, params):
 	cluster_inds = calculate_cluster_inds(clusters)
 	cluster_waveforms = obtain_unit_waveforms(clusters, waveforms)
 	cluster_stdevs = np.zeros(len(cluster_inds))
@@ -45,6 +48,30 @@ def calculate_mahalanobis_distances(clusters, projection, params):
 			mah_dists[cluster, cluster1] = dist
 
 	return mah_dists
+
+def calculate_unit_distances_from_origin(unit_indices, projection):
+    centers = np.mean(projection[unit_indices], 0)
+    centers_sq = np.square(centers)
+    centers_sum = np.sum(centers_sq, 1)
+    centers_sqrt = np.sqrt(centers_sum)
+    return(centers_sqrt)
+
+def calculate_mahalanobis_distances_for_units(unit_indices, projection, num_channels):
+    centers = np.zeros((projection.shape))
+    mah_dists = np.zeros((len(unit_indices), len(unit_indices)))
+
+    for unit in range(len(unit_indices)):
+        centers[unit] = np.mean(projection[unit_indices[unit]], 0)
+    for unit in range(len(unit_indices)):
+        cluster_points = projection[unit_indices[unit]]
+        cluster_points = np.transpose(cluster_points)
+        cov_cluster = np.cov(cluster_points)
+        center0 = np.asarray(centers[unit])
+        for unit1 in range(len(unit_indices)):
+            center1 = np.asarray(centers[unit1])
+            mah_dists[unit, unit1] = mahalanobis(center1, center0, cov_cluster)
+    return mah_dists
+
 
 def ISI(spike_times, sample_rate):
 	ISI = {}
