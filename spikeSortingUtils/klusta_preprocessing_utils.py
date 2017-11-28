@@ -3,7 +3,7 @@ Creation date: Tuesday, Aug 1st 2017
 
 authors: Tansel Baran Yasar and Clemens Dlaska
 
-Contains the functions that are used for creating the .prm and .prb files required for spike-sorting with Klustakwik, and running the Klustakwik on the tetrode or shank (for linear probes). 
+Contains the functions that are used for creating the .prm and .prb files required for spike-sorting with Klustakwik, and running the Klustakwik on the tetrode or shank (for linear probes).
 """
 
 import numpy as np
@@ -96,7 +96,7 @@ def create_shank_prm_file(probe,s,p):
 
         print("spikedetekt = {'filter_low' : 500., \n 'filter_high_factor': 0.95 * .5, \n 'filter_butter_order': 3, \n #Data chunks. \n 'chunk_size_seconds': 1., \n 'chunk_overlap_seconds': .015, \n #Threshold \n 'n_excerpts': 50, \n 'excerpt_size_seconds': 1., \n 'use_single_threshold': True, \n 'threshold_strong_std_factor': 4.5, \n 'threshold_weak_std_factor': 2., \n 'detect_spikes': 'negative', \n # Connected components. \n 'connected_component_join_size': 1, \n #Spike extractions. \n 'extract_s_before': 10, \n 'extract_s_after': 10, \n 'weight_power': 2, \n #Features. \n 'n_features_per_channel': 3, \n 'pca_n_waveforms_max': 10000}", file = text)
 
-        print('klustakwik2 = dict(prior_point=1, \n mua_point=2, \n noise_point=1, \n points_for_cluster_mask=100, \n penalty_k=0.0, \n penalty_k_log_n=1.0, \n max_iterations=1000, \n num_starting_clusters=500, \n use_noise_clusters=True, \n use_mua_cluster=True, \n num_changed_threshold=0.05, \n full_step_every=1, \n split_first=20, \n split_every=40, \n max_possible_clusters=1000, \n dist_thresh=4, \n max_quick_step_candidates=100000000, \n max_quick_step_candidates_fraction=0.4, \n always_split_bimodal=False, \n subset_break_fraction=0.01, \n break_fraction=0.0, \n fast_split=False, \n max_split_iterations=None, \n consider_cluster_deletion=True, \n num_cpus=None)', file = text)
+        print('klustakwik2 = dict(prior_point=1, \n mua_point=2, \n noise_point=1, \n points_for_cluster_mask=100, \n penalty_k=0.0, \n penalty_k_log_n=1.0, \n max_iterations=1000, \n num_starting_clusters=500, \n use_noise_cluster=True, \n use_mua_cluster=True, \n num_changed_threshold=0.05, \n full_step_every=1, \n split_first=20, \n split_every=40, \n max_possible_clusters=1000, \n dist_thresh=4, \n max_quick_step_candidates=100000000, \n max_quick_step_candidates_fraction=0.4, \n always_split_bimodal=False, \n subset_break_fraction=0.01, \n break_fraction=0.0, \n fast_split=False, \n max_split_iterations=None, \n consider_cluster_deletion=True, \n num_cpus=None)', file = text)
 
     text.close()
 
@@ -109,7 +109,6 @@ def create_shank_prb_file(probe,s,p):
         s: Shank index (0 for the left-most shank, looking at the electrode side)
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
-
     file_dir = p['path'] + '/probe_{:g}_shank_{:g}'.format(probe,s) + '/probe_{:g}_shank_{:g}.prb'.format(probe,s)
     copyfile('./prb_files/' + p['probe_name'] + '.prb', file_dir)
 
