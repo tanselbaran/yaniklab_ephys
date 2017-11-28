@@ -43,6 +43,7 @@ def main(p):
                         create_tetrode_prb_file(probe,h,s,p)
                         print('################################## spikesorting, clustering of data in tetrode {:g}{:g} #################################################'.format(h,s))
                         do_klusta_for_tetrode(probe,h,s,p)
+                        os.chdir(mycwd)
                     if p['LFP_analysis']:
                         print('############################# performing stimulus evoked LFP analysis for tetrode {:g}{:g} ##############################################'.format(h,s))
                         read_evoked_lfp(probe,[h,s],p,tetrode_file)
@@ -57,10 +58,10 @@ def main(p):
                 if p['spikeSorting']:
                     print('################################### generate prm and prb file for probe {:g} shank {:g} ######################################################'.format(probe,s))
                     create_shank_prm_file(probe,s,p)
-                    os.chdir(mycwd)
                     create_shank_prb_file(probe,s,p)
                     print('################################### spikesorting, clustering of probe {:g} shank {:g} data ###################################################'.format(probe,s))
                     do_klusta_for_shank(probe,s,p)
+                    os.chdir(mycwd)
                 if p['LFP_analysis']:
                     print('################################### performing stimulus evoked LFP analysis for probe {:g} shank {:g} ########################################'.format(probe,s))
                     read_evoked_lfp([probe,s],p,shank_file)
