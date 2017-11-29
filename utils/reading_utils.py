@@ -47,7 +47,7 @@ def read_time_dat_file(filepath, sample_rate):
     time_file = raw_array / float(sample_rate) #converting from int32 to seconds
     return time_file
 
-def read_group(probe,h,s,p):
+def read_group(probe,s,p):
     """
     This function reads the data for a given tetrode or the shank of a linear probe for a recording session and returns it as an array. It supports 'file_per_channel' ('dat') and 'file_per_recording' ('rhd') options of the Intan software and data from Open Ephys software ('cont'). It also saves this array in a .dat file in case spike sorting will be performed.
 
@@ -74,65 +74,46 @@ def read_group(probe,h,s,p):
         if p['fileformat'] == 'dat':
             #For the "channel per file" option of Intan
             info = read_data(p['path'] + '/info.rhd')
-            electrode0_path = p['path'] + '/amp-' +  str(info['amplifier_channels'][int(id[h,s,0])]['native_channel_name']) + '.dat'
+            electrode0_path = p['path'] + '/amp-' +  str(info['amplifier_channels'][int(id[s,0])]['native_channel_name']) + '.dat'
             electrode0 = read_amplifier_dat_file(electrode0_path)
         else:
             #For the OpenEphys files
-            electrode0_path = p['path'] + '/100_CH' + str(id[h,s,0] + 1) + '.continuous'
+            electrode0_path = p['path'] + '/100_CH' + str(id[s,0] + 1) + '.continuous'
             electrode0_dict = OpenEphys.load(electrode0_path)
             electrode0 = electrode0_dict['data']
 
         #Reading the rest of the electrodes in the tetrode or the shank
         ## For tetrodes
-        if p['probe_type'] == 'tetrode':
-            group_file = np.zeros((4, len(electrode0))) #Create  the array of the group file
-            group_file[0] = electrode0
-            for i in range(1,4):
-                if p['fileformat'] == 'dat':
-                    #For the "channel per file" option of Intan
-                    electrode_path = p['path'] + '/amp-' + str(info['amplifier_channels'][int(id[h,s,i])]['native_channel_name']) + '.dat'
-                    group_file[i] = read_amplifier_dat_file(electrode_path)
-                else:
-                    #For the OpenEphys files
-                    electrode_path = p['path'] + '/100_CH' + str(id[h,s,i] + 1) + '.continuous'
-                    electrode_dict = OpenEphys.load(electrode_path)
-                    group_file[i] = electrode_dict['data']
 
-        ## For linear probes
+        channels_in_group =
+        if p['probe_type'] == 'tetrode':
+            channels_in_group = 4
         elif p['probe_type'] == 'linear':
-            group_file = np.zeros((p['nr_of_electrodes_per_shank'], len(electrode0)))
-            group_file[0] = electrode0
-    		#Reading out the data for each electrode and saving into the shank_file array
-            for h in range(1, p['nr_of_electrodes_per_shank']):
-                if p['fileformat'] == 'dat':
-                    electrode_path = p['path'] + '/amp-' + str(info['amplifier_channels'][int(id[h,s])]['native_channel_name']) + '.dat'
-                    group_file[h] = read_amplifier_dat_file(electrode_path)
-                else:
-                    electrode_path = p['path'] + '/100_CH' + str(id[h,s] + 1) + '.continuous'
-                    electrode_dict = OpenEphys.load(electrode_path)
-                    trace = electrode_dict['data']
-                    group_file[h] = trace
+            channels_in_group = p['nr_of_electrodes_per_shank']
+
+        group_file = np.zeros((channels_in_group, len(electrode0))) #Create  the array of the group file
+        group_file[0] = electrode0
+        for trode in range(1,channels_in_group):
+            if p['fileformat'] == 'dat':
+                #For the "channel per file" option of Intan
+                electrode_path = p['path'] + '/amp-' + str(info['amplifier_channels'][int(id[s,trode)]['native_channel_name']) + '.dat'
+                group_file[trode] = read_amplifier_dat_file(electrode_path)
+            else:
+                #For the OpenEphys files
+                electrode_path = p['path'] + '/100_CH' + str(id[s,trode] + 1) + '.continuous'
+                electrode_dict = OpenEphys.load(electrode_path)
+                group_file[trode] = electrode_dict['data']
 
     #Reading out the data for the "file per recording" option of Intan
     elif p['fileformat'] == 'rhd':
-        #For tetrodes
-        if p['probe_type'] == 'tetrode':
-            group_file = np.zeros(4,0)
-            for sample in range(len(p['rhd_file'])):
-                data = read_data(p['path']+'/'+ p['rhd_file'][i])
-                electrode_inds = [int(id[h,s,0]), int(id[h,s,1]), int(id[h,s,2]), int(id[h,s,3])]
-                group_file = np.append(group_file, data['amplifier_data'][electrode_inds], 0)
-        #For linear probes
-        elif ['probe_type'] == 'linear':
-            group_file = np.zeros((p['nr_of_electrodes_per_shank'],0))
-            print(p['rhd_file'])
-            for i in range(len(p['rhd_file'])):
-                data = read_data(p['path']+'/'+ p['rhd_file'][i])
-                electrode_inds = []
-                for h in range(p['nr_of_electrodes_per_shank']):
-                    electrode_inds = np.append(electrode_inds, id[h,s])
-                electrode_inds = electrode_inds.astype(int)
-                group_file = np.append(group_file, data['amplifier_data'][electrode_inds], 0)
+        group_file = np.zeros((channels_in_group,0))
+        for sample in range(len(p['rhd_file'])):
+            data = read_data(p['path']+'/'+ p['rhd_file'][sample])
+            electrode_inds = []
+            for trode in range(channels_in_group):
+                electrode_inds = np.append(electrode_inds, id[trode,s])
+            electrode_inds = electrode_inds.astype(int)
+            group_file = np.append(group_file, data['amplifier_data'][electrode_inds], 0)
 
     #Writing the data into the .dat file if spike sorting will be performed.
     if p['spikeSorting']:
