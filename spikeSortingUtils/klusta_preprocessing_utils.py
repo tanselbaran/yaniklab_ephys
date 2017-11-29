@@ -28,7 +28,7 @@ def create_prm_file(probe,s,p):
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
 
-    file_dir = p['mainpath'] + '/probe_{:g}_group_{:g}'.format(h,s)+'/probe_{:g}_group_{:g}.prm'.format(probe,s)
+    file_dir = p['mainpath'] +'/probe_{:g}_group_{:g}.prm'.format(probe,s)
 
     if p['probe_type'] == 'tetrode':
         nr_of_electrodes_per_group = 4
@@ -56,7 +56,7 @@ def create_prb_file(probe,s,p):
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
 
-    file_dir = p['mainpath'] + '/probe_{:g}_group_{:g}'.format(h,s)+'/probe_{:g}_group_{:g}.prb'.format(probe,s)
+    file_dir = p['mainpath'] + '/probe_{:g}_group_{:g}.prb'.format(probe,s)
     if p['probe_type'] == 'tetrode':
         tetrode = dict(channels = list(range(4)), graph = list(combinations(range(4),2)), geometry = {0: (0, 90), 1: (0, 60), 2: (0, 30), 3: (0, 0)})
         channel_groups = {0: tetrode}
@@ -65,7 +65,7 @@ def create_prb_file(probe,s,p):
     elif p['probe_type'] == 'linear':
         copyfile('./prb_files/' + p['probe_name'] + '.prb', file_dir) #for the linear probes, just copy the probe file downloaded from the repository for the Neuronexus probe files
 
-def do_klusta(probe,h,s,p):
+def do_klusta(probe,s,p):
     """
     This function runs the klustakwik for the tetrode or the shank of a linear probe.
 
@@ -75,6 +75,5 @@ def do_klusta(probe,h,s,p):
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
 
-    file_dir = p['mainpath'] + '/probe_{:g}_group_{:g}'.format(probe,s)
-    os.chdir(file_dir)
+    file_dir = p['mainpath']
     os.system('klusta probe_{:g}_group_{:g}.prm'.format(probe,s))

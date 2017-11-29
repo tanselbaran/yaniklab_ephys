@@ -85,7 +85,6 @@ def read_group(probe,s,p):
         #Reading the rest of the electrodes in the tetrode or the shank
         ## For tetrodes
 
-        channels_in_group =
         if p['probe_type'] == 'tetrode':
             channels_in_group = 4
         elif p['probe_type'] == 'linear':
@@ -96,7 +95,7 @@ def read_group(probe,s,p):
         for trode in range(1,channels_in_group):
             if p['fileformat'] == 'dat':
                 #For the "channel per file" option of Intan
-                electrode_path = p['path'] + '/amp-' + str(info['amplifier_channels'][int(id[s,trode)]['native_channel_name']) + '.dat'
+                electrode_path = p['path'] + '/amp-' + str(info['amplifier_channels'][int(id[s,trode])]['native_channel_name']) + '.dat'
                 group_file[trode] = read_amplifier_dat_file(electrode_path)
             else:
                 #For the OpenEphys files
@@ -117,8 +116,8 @@ def read_group(probe,s,p):
 
     #Writing the data into the .dat file if spike sorting will be performed.
     if p['spikeSorting']:
-        fid_write = open(p['mainpath'] +'/group_{:g}_group_{:g}.dat'.format(probe,s), 'w')
-        shank_file_to_save = shank_file.transpose().round().astype('int16')
-        shank_file_to_save.tofile(fid_write)
+        fid_write = open(p['mainpath'] +'/probe_{:g}_group_{:g}.dat'.format(probe,s), 'w')
+        group_file_to_save = group_file.transpose().round().astype('int16')
+        group_file_to_save.tofile(fid_write)
 
     return group_file

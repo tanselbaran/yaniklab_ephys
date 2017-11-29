@@ -40,7 +40,7 @@ def main(p):
     for probe in range(p['probes']):
         for s in tqdm(range(nr_of_groups)):
             group_file = read_group(probe,s,p)
-            if p['spikesorting']:
+            if p['spikeSorting']:
                 create_prm_file(probe,s,p)
                 create_prb_file(probe,s,p)
                 do_klusta(probe,s,p)
