@@ -28,7 +28,7 @@ def create_prm_file(probe,s,p):
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
 
-    file_dir = p['mainpath'] +'/probe_{:g}_group_{:g}.prm'.format(probe,s)
+    file_dir = p['mainpath'] +'/analysis_files/probe_{:g}_group_{:g}.prm'.format(probe,s)
 
     if p['probe_type'] == 'tetrode':
         nr_of_electrodes_per_group = 4
@@ -36,8 +36,8 @@ def create_prm_file(probe,s,p):
         nr_of_electrodes_per_group = p['nr_of_electrodes_per_shank']
 
     with open(file_dir, 'a') as text:
-        print('experiment_name = \'probe_{:g}_shank_{:g}\''.format(probe,s), file = text)
-        print('prb_file = \'probe_{:g}_shank_{:g}.prb\''.format(probe,s), file = text)
+        print('experiment_name = \'probe_{:g}_group_{:g}\''.format(probe,s), file = text)
+        print('prb_file = \'probe_{:g}_group_{:g}.prb\''.format(probe,s), file = text)
         print('traces = dict(raw_data_files=[experiment_name + \'.dat\'],voltage_gain=10., sample_rate =' + str(p['sample_rate']) + ', n_channels = ' + str(nr_of_electrodes_per_group) + ', dtype = \'int16\')', file = text)
 
         print("spikedetekt = { \n 'filter_low' : 500., \n 'filter_high_factor': 0.95 * .5, \n 'filter_butter_order': 3, \n #Data chunks. \n 'chunk_size_seconds': 1., \n 'chunk_overlap_seconds': .015, \n #Threshold \n 'n_excerpts': 50, \n 'excerpt_size_seconds': 1., \n 'use_single_threshold': True, \n 'threshold_strong_std_factor': 4.5, \n 'threshold_weak_std_factor': 2., \n 'detect_spikes': 'negative', \n # Connected components. \n 'connected_component_join_size': 1, \n #Spike extractions. \n 'extract_s_before': 10, \n 'extract_s_after': 10, \n 'weight_power': 2, \n #Features. \n 'n_features_per_channel': 3, \n 'pca_n_waveforms_max': 10000}", file = text)
@@ -56,7 +56,7 @@ def create_prb_file(probe,s,p):
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
 
-    file_dir = p['mainpath'] + '/probe_{:g}_group_{:g}.prb'.format(probe,s)
+    file_dir = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}.prb'.format(probe,s)
     if p['probe_type'] == 'tetrode':
         tetrode = dict(channels = list(range(4)), graph = list(combinations(range(4),2)), geometry = {0: (0, 90), 1: (0, 60), 2: (0, 30), 3: (0, 0)})
         channel_groups = {0: tetrode}
@@ -75,5 +75,6 @@ def do_klusta(probe,s,p):
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
 
-    file_dir = p['mainpath']
+    file_dir = p['mainpath'] + '/analysis_files'
+    os.chdir(file_dir)
     os.system('klusta probe_{:g}_group_{:g}.prm'.format(probe,s))

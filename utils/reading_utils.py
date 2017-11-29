@@ -64,6 +64,9 @@ def read_group(probe,s,p):
 
     """
     id = probe * p['nr_of_electrodes'] + p['id'].astype(int) #Reading the channel id file from the parameters dictionary
+    #If not exists, create a folder where the analysis files for the entire experiment would be stored for klusta purposes
+    if not os.path.exists(p['mainpath'] + '/analysis_files'):
+        os.mkdir(p['mainpath'] + '/analysis_files')
 
     if p['fileformat'] == 'dat' or p['fileformat'] == 'cont':
         #If not exists, create a dictionary for the intermediate files for the channel group (shank or tetrode)
@@ -116,7 +119,7 @@ def read_group(probe,s,p):
 
     #Writing the data into the .dat file if spike sorting will be performed.
     if p['spikeSorting']:
-        fid_write = open(p['mainpath'] +'/probe_{:g}_group_{:g}.dat'.format(probe,s), 'w')
+        fid_write = open(p['mainpath'] +'/analysis_files/probe_{:g}_group_{:g}.dat'.format(probe,s), 'w')
         group_file_to_save = group_file.transpose().round().astype('int16')
         group_file_to_save.tofile(fid_write)
 
