@@ -26,10 +26,19 @@ def main(p):
     """
 
     print('start reading out and analyzing trodes')
+
+    #Getting the directory of the main path of the experiment for reference in future steps
     mycwd = os.getcwd()
+
+    # Getting the number of channel groups in the probe (number of tetrodes for tetrode configuration and number of shanks for linear probe configuration)
+    if p['probe_type'] == 'tetrode':
+        nr_of_groups = p['nr_of_tetrodes']
+    elif p['probe_type'] == 'linear':
+        nr_of_groups = p['shanks']
+
 ########Read out and Analysis################
     for probe in range(p['probes']):
-        for s in tqdm(range(p['groups'])):
+        for s in tqdm(range(nr_of_groups)):
             group_file = read_group(probe,s,p)
             if p['spikesorting']:
                 create_prm_file(probe,s,p)
