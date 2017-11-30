@@ -53,7 +53,6 @@ def read_group(probe,s,p):
 
     Inputs:
         probe: Index specifying the probe (can be >0 in case of experiments with simultaneous recordings from multiple probes)
-        h: Index specifying the height of the tetrode on the shank (starting from 0, bottom to top)
         s: Index specifying the shank (starting from 0, left to right)
         p: Parameters dictionary for the recording session to be analyzed
 
@@ -86,14 +85,10 @@ def read_group(probe,s,p):
             electrode0 = electrode0_dict['data']
 
         #Reading the rest of the electrodes in the tetrode or the shank
-        if p['probe_type'] == 'tetrode':
-            channels_in_group = 4
-        elif p['probe_type'] == 'linear':
-            channels_in_group = p['nr_of_electrodes_per_shank']
 
-        group_file = np.zeros((channels_in_group, len(electrode0))) #Create  the array of the group file
+        group_file = np.zeros((p['nr_of_electrodes_per_group'], len(electrode0))) #Create  the array of the group file
         group_file[0] = electrode0
-        for trode in range(1,channels_in_group):
+        for trode in range(1,p['nr_of_electrodes_per_group']):
             if p['fileformat'] == 'dat':
                 #For the "channel per file" option of Intan
                 electrode_path = p['path'] + '/amp-' + str(info['amplifier_channels'][int(id[s,trode])]['native_channel_name']) + '.dat'
@@ -106,11 +101,11 @@ def read_group(probe,s,p):
 
     #Reading out the data for the "file per recording" option of Intan
     elif p['fileformat'] == 'rhd':
-        group_file = np.zeros((channels_in_group,0))
+        group_file = np.zeros((p['nr_of_electrodes_per_group'],0))
         for sample in range(len(p['rhd_file'])):
             data = read_data(p['path']+'/'+ p['rhd_file'][sample])
             electrode_inds = []
-            for trode in range(channels_in_group):
+            for trode in range(p['nr_of_electrodes_per_group']):
                 electrode_inds = np.append(electrode_inds, id[trode,s])
             electrode_inds = electrode_inds.astype(int)
             group_file = np.append(group_file, data['amplifier_data'][electrode_inds], 0)
