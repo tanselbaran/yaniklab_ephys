@@ -86,8 +86,6 @@ def read_group(probe,s,p):
             electrode0 = electrode0_dict['data']
 
         #Reading the rest of the electrodes in the tetrode or the shank
-        ## For tetrodes
-
         if p['probe_type'] == 'tetrode':
             channels_in_group = 4
         elif p['probe_type'] == 'linear':
@@ -119,8 +117,14 @@ def read_group(probe,s,p):
 
     #Writing the data into the .dat file if spike sorting will be performed.
     if p['spikeSorting']:
-        fid_write = open(p['mainpath'] +'/analysis_files/probe_{:g}_group_{:g}.dat'.format(probe,s), 'w')
+        if not os.path.exists(p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}'.format(probe,s)):
+            os.mkdir(p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}'.format(probe,s))
+        if p['order'] == 0:
+            fid_write = open(p['mainpath'] +'/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.dat'.format(probe,s,probe,s), 'w')
+        else:
+            fid_write = open(p['mainpath'] +'/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.dat'.format(probe,s,probe,s), 'a')
         group_file_to_save = group_file.transpose().round().astype('int16')
         group_file_to_save.tofile(fid_write)
+        fid_write.close()
 
     return group_file

@@ -28,7 +28,7 @@ def create_prm_file(probe,s,p):
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
 
-    file_dir = p['mainpath'] +'/analysis_files/probe_{:g}_group_{:g}.prm'.format(probe,s)
+    file_dir = p['mainpath'] +'/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.prm'.format(probe,s,probe,s)
 
     if p['probe_type'] == 'tetrode':
         nr_of_electrodes_per_group = 4
@@ -56,7 +56,7 @@ def create_prb_file(probe,s,p):
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
 
-    file_dir = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}.prb'.format(probe,s)
+    file_dir = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.prb'.format(probe,s,probe,s)
     if p['probe_type'] == 'tetrode':
         tetrode = dict(channels = list(range(4)), graph = list(combinations(range(4),2)), geometry = {0: (0, 90), 1: (0, 60), 2: (0, 30), 3: (0, 0)})
         channel_groups = {0: tetrode}
@@ -75,6 +75,6 @@ def do_klusta(probe,s,p):
         p: Parameters dictionary containing the parameters and preferences related to spike sorting.
     """
 
-    file_dir = p['mainpath'] + '/analysis_files'
+    file_dir = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}'.format(probe,s)
     os.chdir(file_dir)
     os.system('klusta probe_{:g}_group_{:g}.prm'.format(probe,s))

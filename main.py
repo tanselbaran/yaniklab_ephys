@@ -41,9 +41,11 @@ def main(p):
         for s in tqdm(range(nr_of_groups)):
             group_file = read_group(probe,s,p)
             if p['spikeSorting']:
-                create_prm_file(probe,s,p)
-                create_prb_file(probe,s,p)
-                do_klusta(probe,s,p)
-                os.chdir(mycwd)
+                if p['order'] == 0:
+                    create_prm_file(probe,s,p)
+                    create_prb_file(probe,s,p)
+                if p['order'] == 2:
+                    do_klusta(probe,s,p)
+                    os.chdir(mycwd)
             if p['LFP_analysis']:
                 read_evoked_lfp(probe,s,p,group_file)
