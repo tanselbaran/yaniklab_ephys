@@ -14,8 +14,7 @@ def retain_cluster_info(probe,group,p):
     This function extracts the spike info from the clu file output of Klustakwik that was run on a tetrode data and saves the spike times and waveforms for  a cluster in a pickle file.
 
     Inputs:
-        h: height index of the tetrode (0 for the bottom-most tetrode of the shank, increasing as going up)
-        s: shank index (0 for the left-most shank on the electrode side, increasing as going to right)
+        group: index of channel groups (0 for the left-most and bottom-most, increasing upwards first in a shank and rightwards when the shank is complete)
         p: parameters dictionary for the recording session
 
     Outputs:
@@ -23,6 +22,7 @@ def retain_cluster_info(probe,group,p):
             P: spike info dictionary which consist of C sub-dictionaries where C is the number of clusters. Each sub-dictionary consists of the following:
                 spike_times_cluster: times of the spikes that belong to this cluster
                 waveforms: waveforms of the spikes that belong to this cluster
+            p: Params dictionary from the rest of the pipeline
     """
 
     print(p['mainpath'])
