@@ -9,7 +9,7 @@ Contains the functions for retaining the spike information from the output of Kl
 import numpy as np
 import h5py
 
-def retain_cluster_info_for_tetrode(probe,s,p):
+def retain_cluster_info(probe,group,p):
     """
     This function extracts the spike info from the clu file output of Klustakwik that was run on a tetrode data and saves the spike times and waveforms for  a cluster in a pickle file.
 
@@ -24,12 +24,14 @@ def retain_cluster_info_for_tetrode(probe,s,p):
                 spike_times_cluster: times of the spikes that belong to this cluster
                 waveforms: waveforms of the spikes that belong to this cluster
     """
-    path_kwik_file = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group{:g}.kwik'.format(probe,group,probe,group) #path to the kwik file
+
+    print(p['mainpath'])
+    path_kwik_file = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.kwik'.format(probe,group,probe,group) #path to the kwik file
     with h5py.File(path_kwik_file,'r') as hf:
         all_spiketimes = hf.get('channel_groups/0/spikes/time_samples') #accessing the spike times
         np_all_spiketimes = np.array(all_spiketimes) #converting the spike times to numpy array
 
-    path_clu_file = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group{:g}.clu.0'.format(probe,group,probe,group) #accessing the file where the clustering information is stored
+    path_clu_file = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.clu.0'.format(probe,group,probe,group) #accessing the file where the clustering information is stored
     np_clu_original = np.loadtxt(path_clu_file) #reading out the clustering information, which is an array with (number of spikes + 1) entries...
     nr_of_clusters = int(np_clu_original[0]) #... whose first entry is the number of clusters. As a result, we need to...
     np_clu = np_clu_original[1:] # ...separate the actual clustering information by excluding the first element.
@@ -54,6 +56,6 @@ def retain_cluster_info_for_tetrode(probe,s,p):
         unit[1] = waveforms
         units['unit{:g}'.format(cluster)] = unit
 
-    path_pickle_file = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}_spikeinfo.pickle'.format(probe,s,probe,s)
+    path_pickle_file = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}_spikeinfo.pickle'.format(probe,group,probe,group)
     with open (path_pickle_file, 'wb') as f:
         pickle.dump({'units':units, 'params_dict':p} ,f)
