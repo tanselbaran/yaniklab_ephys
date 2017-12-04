@@ -78,7 +78,7 @@ def read_evoked_lfp(probe,group,p,data):
     #Reading the trigger timestamps (process varies depending on the file format
 
     if p['fileformat'] == 'dat':
-        trigger_filepath =  p['path'] + '/board-DIN-01.dat' #In the case that the trigger is coming from the Digital Input 1 of the board
+        trigger_filepath =  p['path'] + '/' + p['stim_file'] 
         with open(trigger_filepath, 'rb') as fid:
             trigger = np.fromfile(fid, np.int16)
         stim_timestamps = extract_stim_timestamps(trigger)
