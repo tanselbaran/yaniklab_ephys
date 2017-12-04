@@ -21,12 +21,12 @@ dirs = os.listdir(mainPath)
 
 #Counting the number of recording sessions in the experiment
 num_sessions = 0
-for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'analysis_files') and (folder != 'analyzed') and (folder != 'other'))):
+for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'analysis_files') and (folder != 'analyzed') and (folder != 'other') and (folder != '.DS_Store'))):
     num_sessions = num_sessions + 1
 
 current_session = 1 #Index for the current recording session that is being analyzed
 
-for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'analysis_files') and (folder != 'analyzed') and (folder != 'other'))):
+for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'analysis_files') and (folder != 'analyzed') and (folder != 'other') and (folder != '.DS_Store'))):
     #Iterating over the folders for individual recording sessions, while skipping other files and folders.
     #All files/folders in the experiment folder that are not log, notes or analyzed should be grouped in a folder named 'other'
 

@@ -33,7 +33,7 @@ a=0
 
 #Iterating through all recording sessions, while skipping the log and notes files, and 'analyzed' and 'other' folders
 #Please add all the miscallaneous documents, pictures and folders in the 'other' folder
-for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'analysis_files') and (folder != 'other') and (folder != 'analyzed'))):
+for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'analysis_files') and (folder != 'other') and (folder != 'analyzed') and (folder != '.DS_Store'))):
     p = pickle.load(open(mainPath + folder + '/paramsDict.p', 'rb'))
     if (p['probes'] == 2) and (a == 0):
 	#Creating multiple sheets in the excel output if there are multiple probes
@@ -57,6 +57,14 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
             if not os.path.exists(analyzed_path_for_group):
                 os.mkdir(analyzed_path_for_group)
 
+			evoked_pdf_path = analyzed_path_for_group + '/evoked_pdf_format/' #for saving images in pdf format
+			if not os.path.exists(evoked_pdf_path):
+				os.mkdir(evoked_pdf_path)
+
+			evoked_svg_path = analyzed_path_for_group + '/evoked_svg_format/' #for saving images in svg format
+			if not os.path.exists(evoked_svg_path):
+				os.mkdir(evoked_svg_path)
+
             evoked = data['evoked'] #Evoked LFP waveforms
             evoked_avg = np.mean(evoked,0) #Average evoked LFP waveforms across trials
             evoked_std = np.std(evoked, 0) #Standard deviation of the evoked LFP waveforms across trials
@@ -72,7 +80,8 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
             	colorbar()
             	xlabel('Time(ms)')
             	ylabel('Height from tip (um)')
-            	savefig(analyzed_path_for_group+'/probe_{:g}_group_{:g}_evoked.svg'.format(probe,group), format = 'svg')
+            	savefig(evoked_svg_path + 'probe_{:g}_group_{:g}_evoked.svg'.format(probe,group), format = 'svg')
+				savefig(evoked_pdf_path + 'probe_{:g}_group_{:g}_evoked.pdf'.format(probe,group), format = 'pdf')
             	close()
 
 			#Calculate the peak parameters for each electrode and plot the average evoked LFP waveform for each electrode
@@ -92,7 +101,12 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
                 fill_between(time, evoked_avg[trode]-evoked_err[trode], evoked_avg[trode]+evoked_err[trode])
                 xlabel('Time (ms)')
                 ylabel('Voltage (uV)')
-                savefig(analyzed_path_for_group + '/electrode' + str(trode) + '_evoked.svg', format = 'svg')
+
+				ylim_min = np.floor(np.min(evoked) / 100) * 100
+				ylim_max = np.ceil(np.max(evoked) / 100) * 100
+				ylim(ylim_min, ylim_max)
+                savefig(evoked_svg_path + 'electrode{:g}_evoked.svg'.format(trode), format = 'svg')
+				savefig(evoked_pdf_path + 'electrode{:g}_evoked.pdf'.format(trode), format = 'pdf')
                 close()
 
     #Saving the peak parameters for each recording session into an excel file
