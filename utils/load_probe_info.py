@@ -61,6 +61,9 @@ def load_probe_info(probe):
         probe_info['numTrodesPerShank'] = 8
         probe_info['numTrodes'] = 32
 
+        probe_info['bottom_ycoord'] = 0
+        probe_info['top_ycoord'] = 800
+
         ###Channel mapping###
         neuronexus_to_intan = [15,5,4,14,3,6,2,7,1,8,0,9,13,12,11,10,21,20,19,18,22,24,23,17,25,16,26,28,27,30,29,31]
         id = np.zeros((probe_info['numShanks'], probe_info['numTrodesPerShank']))
