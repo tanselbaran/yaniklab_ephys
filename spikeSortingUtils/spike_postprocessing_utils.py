@@ -8,6 +8,8 @@ Contains the functions for retaining the spike information from the output of Kl
 
 import numpy as np
 import h5py
+from utils.filtering import *
+import pickle
 
 def retain_cluster_info(probe,group,p):
     """
@@ -25,7 +27,6 @@ def retain_cluster_info(probe,group,p):
             p: Params dictionary from the rest of the pipeline
     """
 
-    print(p['mainpath'])
     path_kwik_file = p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.kwik'.format(probe,group,probe,group) #path to the kwik file
     with h5py.File(path_kwik_file,'r') as hf:
         all_spiketimes = hf.get('channel_groups/0/spikes/time_samples') #accessing the spike times
@@ -37,21 +38,24 @@ def retain_cluster_info(probe,group,p):
     np_clu = np_clu_original[1:] # ...separate the actual clustering information by excluding the first element.
 
     raw_data = np.fromfile(p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.dat'.format(probe,group,probe,group),dtype='int16') #reading out the raw data file
-    fil = Filter(rate=p['sample_rate'], low=p['low_cutoff'], high=p['high_cutoff'], order=3)
+    num_samples = int(len(raw_data) / p['nr_of_electrodes_per_group'])
+    raw_data = np.reshape(raw_data, (num_samples, p['nr_of_electrodes_per_group']))
+    fil = bandpassFilter(rate=p['sample_rate'], low=p['low_cutoff'], high=p['high_cutoff'], order=3, axis = 1)
     raw_data_f = fil(raw_data)
 
     for cluster in range(nr_of_clusters+1):
         spike_times_cluster_index = np.where(np_clu == cluster)
         spike_times_cluster = np_all_spiketimes[spike_times_cluster_index]
         num_spikes_in_cluster = len(spike_times_cluster)
-        M = p['samples_per_spike']
+        num_samples_per_waveform = p['samples_before'] + p['samples_after']
         waveforms = np.zeros((num_spikes_in_cluster,p['nr_of_electrodes_per_group'],num_samples_per_waveform))
         for spike in range(num_spikes_in_cluster):
             for trode in range(p['nr_of_electrodes_per_group']):
                 for sample in range(num_samples_per_waveform):
-                    waveforms[spike,trode,sample] = raw_data_f[(int(spike_times_cluster[i])-p['samples_before']+sample)*p['nr_of_electrodes_per_group']+trode]
+                    waveforms[spike,trode,sample] = raw_data_f[(int(spike_times_cluster[spike])-p['samples_before']+sample), trode]
 
         unit = [0,0]
+        units = {}
         unit[0] = spike_times_cluster
         unit[1] = waveforms
         units['unit{:g}'.format(cluster)] = unit

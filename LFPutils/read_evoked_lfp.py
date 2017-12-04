@@ -65,12 +65,12 @@ def read_evoked_lfp(probe,group,p,data):
     save_file = p['path'] + '/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}_evoked.pickle'.format(probe,group,probe,group)
 
     #Low pass filtering
-    filt = lowpassFilter(rate = p['sample_rate'], high = p['low_pass_freq'], order = 3)
+    filt = lowpassFilter(rate = p['sample_rate'], high = p['low_pass_freq'], order = 3, axis = 0)
     filtered = filt(data)
 
     #Notch filtering
     if p['notch_filt_freq'] != 0:
-        notchFilt = notchFilter(rate = p['sample_rate'], low = p['notch_filt_freq']-5, high = p['notch_filt_freq']+5, order = 3)
+        notchFilt = notchFilter(rate = p['sample_rate'], low = p['notch_filt_freq']-5, high = p['notch_filt_freq']+5, order = 3, axis = 0)
         filtered = notchFilt(filtered)
 
     #filtered = np.transpose(filtered)
@@ -78,7 +78,7 @@ def read_evoked_lfp(probe,group,p,data):
     #Reading the trigger timestamps (process varies depending on the file format
 
     if p['fileformat'] == 'dat':
-        trigger_filepath =  p['path'] + '/' + p['stim_file'] 
+        trigger_filepath =  p['path'] + '/' + p['stim_file']
         with open(trigger_filepath, 'rb') as fid:
             trigger = np.fromfile(fid, np.int16)
         stim_timestamps = extract_stim_timestamps(trigger)
