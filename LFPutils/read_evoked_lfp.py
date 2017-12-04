@@ -41,7 +41,7 @@ def read_evoked_lfp_from_stim_timestamps(filtered_data, begin, end, stim_timesta
         evoked[i,:,:] = filtered_data[:,int(stim_timestamps[i]-p['evoked_pre']*p['sample_rate']):int(stim_timestamps[i]+p['evoked_post']*p['sample_rate'])]
     return evoked
 
-def read_evoked_lfp(coords,p,data):
+def read_evoked_lfp(probe,group,p,data):
     """This function processes the data traces for the specified probe and shank in a recording session to obtain
 	the mean evoked LFP activity. It saves the evoked activity and the average evoked activity in a Pickle file. It
 	supports the data from 'file per channel' (dat) and 'file per recording' (rhd) options of Intan software and the
@@ -61,18 +61,11 @@ def read_evoked_lfp(coords,p,data):
     """
     print('#### Low-pass and notch filtering the data ####')
 
-    if p['probe_type'] == 'tetrode':
-        nr_of_electrodes = 4
-        [h,s] = coords
-        save_file = p['path'] + '/tetrode_{:g}_{:g}_evoked.pickle'.format(h,s)
-
-    elif p['probe_type'] == 'linear':
-        nr_of_electrodes = p['nr_of_electrodes_per_shank']
-        [probe,s] = coords
-        save_file = p['path'] + '/probe_{:g}_shank_{:g}'.format(probe,s) + '/probe_{:g}_shank_{:g}_evoked.pickle'.format(probe,s)
+    nr_of_electrodes = p['nr_of_electrodes_per_group']
+    save_file = p['path'] + '/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}_evoked.pickle'.format(probe,group,probe,group)
 
     #Low pass filtering
-    filt = Filter(rate = p['sample_rate'], high = p['low_pass_freq'], order = 3)
+    filt = lowpassFilter(rate = p['sample_rate'], high = p['low_pass_freq'], order = 3)
     filtered = filt(data)
 
     #Notch filtering
