@@ -65,12 +65,12 @@ def read_evoked_lfp(probe,group,p,data):
     save_file = p['path'] + '/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}_evoked.pickle'.format(probe,group,probe,group)
 
     #Low pass filtering
-    filt = lowpassFilter(rate = p['sample_rate'], high = p['low_pass_freq'], order = 3, axis = 0)
+    filt = lowpassFilter(rate = p['sample_rate'], high = p['low_pass_freq'], order = 3, axis = 1)
     filtered = filt(data)
 
     #Notch filtering
     if p['notch_filt_freq'] != 0:
-        notchFilt = notchFilter(rate = p['sample_rate'], low = p['notch_filt_freq']-5, high = p['notch_filt_freq']+5, order = 3, axis = 0)
+        notchFilt = notchFilter(rate = p['sample_rate'], low = p['notch_filt_freq']-5, high = p['notch_filt_freq']+5, order = 3, axis = 1)
         filtered = notchFilt(filtered)
 
     #filtered = np.transpose(filtered)

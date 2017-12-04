@@ -40,7 +40,7 @@ def retain_cluster_info(probe,group,p):
     raw_data = np.fromfile(p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.dat'.format(probe,group,probe,group),dtype='int16') #reading out the raw data file
     num_samples = int(len(raw_data) / p['nr_of_electrodes_per_group'])
     raw_data = np.reshape(raw_data, (num_samples, p['nr_of_electrodes_per_group']))
-    fil = bandpassFilter(rate=p['sample_rate'], low=p['low_cutoff'], high=p['high_cutoff'], order=3, axis = 1)
+    fil = bandpassFilter(rate=p['sample_rate'], low=p['low_cutoff'], high=p['high_cutoff'], order=3, axis = 0)
     raw_data_f = fil(raw_data)
 
     for cluster in range(nr_of_clusters+1):
