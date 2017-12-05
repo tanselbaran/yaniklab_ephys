@@ -69,18 +69,18 @@ def read_group(probe,s,p):
 
     if p['fileformat'] == 'dat' or p['fileformat'] == 'cont':
         #If not exists, create a dictionary for the intermediate files for the channel group (shank or tetrode)
-        if not os.path.exists(p['path'] + '/group_{:g}_{:g}'.format(probe,s)):
-            os.mkdir(p['path'] + '/group_{:g}_{:g}'.format(probe,s))
+        if not os.path.exists(p['path'] + '/probe_{:g}_group_{:g}'.format(probe,s)):
+            os.mkdir(p['path'] + '/probe_{:g}_group_{:g}'.format(probe,s))
 
         #Read the first electrode in the tetrode or shank to have a definite length for the group file array
         if p['fileformat'] == 'dat':
             #For the "channel per file" option of Intan
             info = read_data(p['path'] + '/info.rhd')
-            electrode0_path = p['path'] + '/amp-' +  str(info['amplifier_channels'][int(id[s,0])]['native_channel_name']) + '.dat'
+            electrode0_path = p['path'] + '/amp-' +  str(info['amplifier_channels'][int(id[0,s])]['native_channel_name']) + '.dat'
             electrode0 = read_amplifier_dat_file(electrode0_path)
         else:
             #For the OpenEphys files
-            electrode0_path = p['path'] + '/100_CH' + str(id[s,0] + 1) + '.continuous'
+            electrode0_path = p['path'] + '/100_CH' + str(id[0,s] + 1) + '.continuous'
             electrode0_dict = OpenEphys.load(electrode0_path)
             electrode0 = electrode0_dict['data']
 
@@ -91,7 +91,7 @@ def read_group(probe,s,p):
         for trode in range(1,p['nr_of_electrodes_per_group']):
             if p['fileformat'] == 'dat':
                 #For the "channel per file" option of Intan
-                electrode_path = p['path'] + '/amp-' + str(info['amplifier_channels'][int(id[s,trode])]['native_channel_name']) + '.dat'
+                electrode_path = p['path'] + '/amp-' + str(info['amplifier_channels'][int(id[trode,s])]['native_channel_name']) + '.dat'
                 group_file[trode] = read_amplifier_dat_file(electrode_path)
             else:
                 #For the OpenEphys files
