@@ -30,7 +30,7 @@ def extract_stim_timestamps_der(stim):
     stim_timestamps = np.where(stim_diff > 0)[0]
     return stim_timestamps
 
-def read_evoked_lfp_from_stim_timestamps(filtered_data, begin, end, stim_timestamps, p):
+def read_evoked_lfp_from_stim_timestamps(filtered_data, stim_timestamps, p):
     #Cutting the triggers that happen too close to the beginning or the end of the recording session
     stim_timestamps = stim_timestamps[(stim_timestamps > (stim_timestamps[0] + p['cut_beginning']*p['sample_rate']))]
     stim_timestamps = stim_timestamps[(stim_timestamps < (stim_timestamps[-1]-p['cut_end']*p['sample_rate']))]
@@ -81,7 +81,7 @@ def read_evoked_lfp(probe,group,p,data):
         trigger_filepath =  p['path'] + '/' + p['stim_file']
         with open(trigger_filepath, 'rb') as fid:
             trigger = np.fromfile(fid, np.int16)
-        stim_timestamps = extract_stim_timestamps(trigger)
+        stim_timestamps = extract_stim_timestamps_der(trigger)
 
     elif p['fileformat'] == 'cont':
 		#Reading the digital input from file
@@ -118,6 +118,6 @@ def read_evoked_lfp(probe,group,p,data):
             if trigger_all[i-1] == 0 and trigger_all[i] == 1:
                 stim_timestamps = np.append(stim_timestamps, i)
 
-    evoked = read_evoked_lfp_from_stim_timestamps(filtered, trigger, stim_timestamps, p)
+    evoked = read_evoked_lfp_from_stim_timestamps(filtered, stim_timestamps, p)
     #Save all evoked activity in a pickle file
     pickle.dump({'evoked':evoked, 'stim_timestamps':stim_timestamps}, open(save_file, 'wb'), protocol=-1)
