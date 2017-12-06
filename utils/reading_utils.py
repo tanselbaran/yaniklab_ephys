@@ -95,7 +95,7 @@ def read_group(probe,s,p):
                 group_file[trode] = read_amplifier_dat_file(electrode_path)
             else:
                 #For the OpenEphys files
-                electrode_path = p['path'] + '/100_CH' + str(id[s,trode] + 1) + '.continuous'
+                electrode_path = p['path'] + '/100_CH' + str(id[trode,s] + 1) + '.continuous'
                 electrode_dict = OpenEphys.load(electrode_path)
                 group_file[trode] = electrode_dict['data']
 
