@@ -13,3 +13,4 @@ python -m bash_kernel.install
 
 2. Install tqdm
 	pip install tqdm
+More test
