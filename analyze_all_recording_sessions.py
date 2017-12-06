@@ -33,7 +33,9 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
     p = pickle.load(open(mainPath + folder + '/paramsDict.p', 'rb')) #Loading the params_dict dictionary
 
     #Determining the order of the session among all sessions
-    if current_session == 1:
+    if num_sessions == 1:
+        p['order'] = 3
+    elif current_session == 1:
         p['order'] = 0
     elif current_session == num_sessions:
         p['order'] = 2
