@@ -41,10 +41,10 @@ def main(p):
         for group in tqdm(range(p['nr_of_groups'])):
             group_file = read_group(probe,group,p)
             if p['spikeSorting']:
-                if p['order'] == 0:
+                if p['order'] == 0 or p['order'] == 3:
                     create_prm_file(probe,group,p)
                     create_prb_file(probe,group,p)
-                if p['order'] == 2:
+                if p['order'] == 2 or p['order'] == 3:
                     do_klusta(probe,group,p)
                     os.chdir(mycwd)
             if p['LFP_analysis']:
