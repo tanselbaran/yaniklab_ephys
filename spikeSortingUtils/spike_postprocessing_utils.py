@@ -42,6 +42,7 @@ def retain_cluster_info(probe,group,p):
     raw_data = np.reshape(raw_data, (num_samples, p['nr_of_electrodes_per_group']))
     fil = bandpassFilter(rate=p['sample_rate'], low=p['low_cutoff'], high=p['high_cutoff'], order=3, axis = 0)
     raw_data_f = fil(raw_data)
+    units = {}
 
     for cluster in range(nr_of_clusters+1):
         spike_times_cluster_index = np.where(np_clu == cluster)
@@ -55,7 +56,6 @@ def retain_cluster_info(probe,group,p):
                     waveforms[spike,trode,sample] = raw_data_f[(int(spike_times_cluster[spike])-p['samples_before']+sample), trode]
 
         unit = [0,0]
-        units = {}
         unit[0] = spike_times_cluster
         unit[1] = waveforms
         units['unit{:g}'.format(cluster)] = unit
