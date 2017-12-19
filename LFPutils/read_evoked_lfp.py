@@ -39,7 +39,7 @@ def read_evoked_lfp_from_stim_timestamps(filtered_data, stim_timestamps, p):
     evoked = np.zeros((len(stim_timestamps), len(filtered_data), int(p['sample_rate']*(p['evoked_pre']+p['evoked_post']))))
     for i in tqdm(range(len(stim_timestamps))):
         evoked[i,:,:] = filtered_data[:,int(stim_timestamps[i]-p['evoked_pre']*p['sample_rate']):int(stim_timestamps[i]+p['evoked_post']*p['sample_rate'])]
-    return evoked
+    return evoked, stim_timestamps
 
 def read_evoked_lfp(probe,group,p,data):
     """This function processes the data traces for the specified probe and shank in a recording session to obtain
@@ -118,6 +118,6 @@ def read_evoked_lfp(probe,group,p,data):
             if trigger_all[i-1] == 0 and trigger_all[i] == 1:
                 stim_timestamps = np.append(stim_timestamps, i)
 
-    evoked = read_evoked_lfp_from_stim_timestamps(filtered, stim_timestamps, p)
+    evoked, stim_timestamps = read_evoked_lfp_from_stim_timestamps(filtered, stim_timestamps, p)
     #Save all evoked activity in a pickle file
     pickle.dump({'evoked':evoked, 'stim_timestamps':stim_timestamps}, open(save_file, 'wb'), protocol=-1)
