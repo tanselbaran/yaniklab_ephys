@@ -58,13 +58,22 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
             if not os.path.exists(tw_svg_format): # create  a new fiel and store images here
                 os.mkdir(tw_svg_format)
 
-            txt_format = analyzed_path_for_shank + 'txt_format/'
+            average_evoked_LFP_at_time_pdf_format = analyzed_path_for_shank + 'avg_eLFP_tw_pdf_format/'
 
-            if os.path.exists(txt_format): # if file exist, delete remove old files
-                shutil.rmtree(txt_format)
+            if os.path.exists(average_evoked_LFP_at_time_pdf_format): # if file exist, delete remove old files
+                shutil.rmtree(average_evoked_LFP_at_time_pdf_format)
 
-            if not os.path.exists(txt_format):
-                os.mkdir(txt_format)
+            if not os.path.exists(average_evoked_LFP_at_time_pdf_format):
+                os.mkdir(average_evoked_LFP_at_time_pdf_format)
+
+            average_evoked_LFP_at_time_svg_format = analyzed_path_for_shank + 'avg_eLFP_tw_svg_format/'
+
+            if os.path.exists(average_evoked_LFP_at_time_svg_format): # if file exist, delete remove old files
+                shutil.rmtree(average_evoked_LFP_at_time_svg_format)
+
+            if not os.path.exists(average_evoked_LFP_at_time_svg_format):
+                os.mkdir(average_evoked_LFP_at_time_svg_format)
+
 
 
             data_location = main_path + '/' + folder + ('/probe_{:g}_group_{:g}'.format(probe,shank)) + ('/probe_{:g}_group_{:g}_evoked.pickle'.format(probe,shank))
@@ -94,11 +103,14 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
                     plot(evoked_LFP_timerange, evoked_window_avgs[window][trode],'k-')
                     xlabel('Time (ms)')# analyzed_path_for_folder
                     ylabel('Peak voltage (uV)')
-                    ylim(-2500,300) #change this depending on LFP amplitude, this is for vM
+                    ylim_min = np.floor(np.min(evoked) / 100) * 100
+                    ylim_max = np.ceil(np.max(evoked) / 100) * 100
+                    ylim(ylim_min, ylim_max)
+                    #ylim(-2500,300) #change this depending on LFP amplitude, this is for vM
                     fill_between(evoked_LFP_timerange, evoked_window_avgs[window][trode]-evoked_window_err[window][trode], evoked_window_avgs[window][trode]+evoked_window_err[window][trode])
                     print('plotting windows figures and saving')
-                    savefig(analyzed_path_for_shank + 'tw_pdf_format/' +'average_evoked_LFP_at_time_window_{:g}_for_group_{:g}_electrode_{:g}'.format(window, shank, trode)+'.pdf', format = 'pdf')
-                    savefig(analyzed_path_for_shank + 'tw_svg_format/' +'average_evoked_LFP_at_time_window_{:g}_for_group_{:g}_electrode_{:g}'.format(window, shank, trode)+'.svg', format = 'svg')
+                    savefig(average_evoked_LFP_at_time_pdf_format +'average_evoked_LFP_at_time_{:g}_for_group_{:g}_electrode_{:g}'.format(window*tw, shank, trode)+'.pdf', format = 'pdf')
+                    savefig(average_evoked_LFP_at_time_svg_format +'average_evoked_LFP_at_time_{:g}_for_group_{:g}_electrode_{:g}'.format(window*tw, shank, trode)+'.svg', format = 'svg')
                     #savefig(analyzed_path_for_shank + 'average_evoked_LFP_at_time_window_{:g}_for_shank_{:g}_electrode_{:g}'.format(window, shank, trode)+'.pdf', format = 'pdf')
                     #savefig(analyzed_path_for_shank + 'average_evoked_LFP_at_time_window_{:g}_for_shank_{:g}_electrode_{:g}'.format(window, shank, trode)+'.svg', format = 'svg')
                     #savefig(analyzed_path_for_shank + 'average_evoked_LFP_at_time_window_{:g}_for_shank_{:g}_electrode_{:g}'.format(window, shank, trode), format = 'svg')
@@ -115,7 +127,10 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
                 plot(windows, evoked_window_amps[probe][shank][trode], 'k-')
                 xlabel('Time (min)')
                 ylabel('Peak voltage (uV)')
-                ylim(-2500,300) #change this depending on LFP amplitude, this is for vM1
+                ylim_min = np.floor(np.min(evoked) / 100) * 100
+                ylim_max = np.ceil(np.max(evoked) / 100) * 100
+                ylim(ylim_min, ylim_max)
+                #ylim(-2500,300) #change this depending on LFP amplitude, this is for vM1
                 errorbar(windows, evoked_window_amps[probe][shank][trode], yerr = evoked_window_peak_errs[probe][shank][trode])
                 savefig(analyzed_path_for_shank + 'tw_svg_format/' +'/electrode' + str(trode) + '_time_windows.svg', format = 'svg')
                 savefig(analyzed_path_for_shank + 'tw_pdf_format/' +'/electrode' + str(trode) + '_time_windows.pdf', format = 'pdf')

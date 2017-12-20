@@ -30,6 +30,18 @@ all_err = []
 folders = sorted((folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'other') and (folder != '.DS_Store') and (folder != 'analyzed') and (folder != 'analysis_files'))))
 p = pickle.load(open(main_path + '/' + folders[0] + '/paramsDict.p', 'rb'))
 
+analyzed_path = main_path + 'analyzed/' + 'all_tw/'
+if not os.path.exists(analyzed_path):
+	os.mkdir(analyzed_path)
+
+tw_pdf = analyzed_path + 'pdf/'
+if not os.path.exists(tw_pdf):
+	os.mkdir(tw_pdf)
+
+tw_svg = analyzed_path + 'svg/'
+if not os.path.exists(tw_svg):
+	os.mkdir(tw_svg)
+
 for probe in range(p['probes']):
 	for shank in range(p['shanks']):
 		for trode in range(p['nr_of_electrodes_per_shank']):
@@ -50,11 +62,9 @@ for probe in range(p['probes']):
 			ylabel('Peak voltage (uV)')
 			ylim(-2500,300) #change this depending on LFP amplitude, this is for vM1
 			errorbar(a, all_av, yerr = all_err)
-			analyzed_path = main_path + 'analyzed/' + 'all_tw/'
-			if not os.path.exists(analyzed_path):
-				os.mkdir(analyzed_path)
-			#savefig(analyzed_path + 'Run2_time_windows_probe_{:g}_shank_{:g}.svg'.format(probe,shank), format = 'svg')
-			savefig(analyzed_path +'Run2_time_windows_probe_{:g}_group_{:g}_trode_{:g}.pdf'.format(probe,shank,trode), format = 'pdf')
+
+			savefig(tw_svg + 'Run2_time_windows_probe_{:g}_group_{:g}_trode_{:g}.svg'.format(probe,shank,trode), format = 'svg')
+			savefig(tw_pdf + 'Run2_time_windows_probe_{:g}_group_{:g}_trode_{:g}.pdf'.format(probe,shank,trode), format = 'pdf')
 			close()
 			all_av = []
 			all_err = []
