@@ -18,16 +18,16 @@ from matplotlib.pyplot import *
 #text_file = open("test.txt", "r")
 #lines = text_file.readlines()
 #input variables
-main_path='/Users/aagamshah/Data/2017_10_24_FUSs1_EphysM1_E-FUS_NBBB_11/'  # with / at the end.
+main_path='/mnt/e59fbd77-1f9b-46e9-b00d-7ff44ab2c517/2017_12_12_FUSs1_EphysM1_E-FUS_NBBB25/'  # with / at the end.
 tw=2 # time window value
-shank_to_plot=0
-trode_to_plot=6
+shank_to_plot=1
+trode_to_plot=5
 
 
 #########################
 dirs=os.listdir(main_path)
 
-for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'other') and (folder != '.DS_Store') and (folder != 'analyzed'))):
+for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder != 'notes.docx') and (folder != 'other') and (folder != '.DS_Store') and (folder != 'analyzed') and (folder != 'analysis_files'))):
     print(folder)
     p = pickle.load(open(main_path + '/' + folder + '/paramsDict.p', 'rb')) #Loading parameter dictionary
     len_time_window = tw * 60 * p['sample_rate']  # 30000 samples per second
@@ -42,7 +42,7 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
 
         for shank in range(p['shanks']):
 
-            analyzed_path_for_shank = analyzed_path_for_folder + '/probe_{:g}_shank_{:g}/'.format(probe,shank)
+            analyzed_path_for_shank = analyzed_path_for_folder + '/probe_{:g}_group_{:g}/'.format(probe,shank)
             tw_pdf_format = analyzed_path_for_shank + 'tw_pdf_format/' # for saving images in pdf format
 
             if os.path.exists(tw_pdf_format): # if file exist, delete remove old files
@@ -67,7 +67,7 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
                 os.mkdir(txt_format)
 
 
-            data_location = main_path + '/' + folder + ('/probe_{:g}_shank_{:g}'.format(probe,shank)) + ('/probe_{:g}_shank_{:g}_evoked.pickle'.format(probe,shank))
+            data_location = main_path + '/' + folder + ('/probe_{:g}_group_{:g}'.format(probe,shank)) + ('/probe_{:g}_group_{:g}_evoked.pickle'.format(probe,shank))
             evoked_data = pickle.load(open(data_location, 'rb'))
             evoked = evoked_data['evoked']
             stim_timestamps = evoked_data['stim_timestamps']
@@ -94,11 +94,11 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
                     plot(evoked_LFP_timerange, evoked_window_avgs[window][trode],'k-')
                     xlabel('Time (ms)')# analyzed_path_for_folder
                     ylabel('Peak voltage (uV)')
-                    ylim(-700,300) #change this depending on LFP amplitude, this is for vM
+                    ylim(-2500,300) #change this depending on LFP amplitude, this is for vM
                     fill_between(evoked_LFP_timerange, evoked_window_avgs[window][trode]-evoked_window_err[window][trode], evoked_window_avgs[window][trode]+evoked_window_err[window][trode])
                     print('plotting windows figures and saving')
-                    savefig(analyzed_path_for_shank + 'tw_pdf_format/' +'average_evoked_LFP_at_time_window_{:g}_for_shank_{:g}_electrode_{:g}'.format(window, shank, trode)+'.pdf', format = 'pdf')
-                    savefig(analyzed_path_for_shank + 'tw_svg_format/' +'average_evoked_LFP_at_time_window_{:g}_for_shank_{:g}_electrode_{:g}'.format(window, shank, trode)+'.svg', format = 'svg')
+                    savefig(analyzed_path_for_shank + 'tw_pdf_format/' +'average_evoked_LFP_at_time_window_{:g}_for_group_{:g}_electrode_{:g}'.format(window, shank, trode)+'.pdf', format = 'pdf')
+                    savefig(analyzed_path_for_shank + 'tw_svg_format/' +'average_evoked_LFP_at_time_window_{:g}_for_group_{:g}_electrode_{:g}'.format(window, shank, trode)+'.svg', format = 'svg')
                     #savefig(analyzed_path_for_shank + 'average_evoked_LFP_at_time_window_{:g}_for_shank_{:g}_electrode_{:g}'.format(window, shank, trode)+'.pdf', format = 'pdf')
                     #savefig(analyzed_path_for_shank + 'average_evoked_LFP_at_time_window_{:g}_for_shank_{:g}_electrode_{:g}'.format(window, shank, trode)+'.svg', format = 'svg')
                     #savefig(analyzed_path_for_shank + 'average_evoked_LFP_at_time_window_{:g}_for_shank_{:g}_electrode_{:g}'.format(window, shank, trode), format = 'svg')
@@ -115,7 +115,7 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
                 plot(windows, evoked_window_amps[probe][shank][trode], 'k-')
                 xlabel('Time (min)')
                 ylabel('Peak voltage (uV)')
-                ylim(-700,150) #change this depending on LFP amplitude, this is for vM1
+                ylim(-2500,300) #change this depending on LFP amplitude, this is for vM1
                 errorbar(windows, evoked_window_amps[probe][shank][trode], yerr = evoked_window_peak_errs[probe][shank][trode])
                 savefig(analyzed_path_for_shank + 'tw_svg_format/' +'/electrode' + str(trode) + '_time_windows.svg', format = 'svg')
                 savefig(analyzed_path_for_shank + 'tw_pdf_format/' +'/electrode' + str(trode) + '_time_windows.pdf', format = 'pdf')
@@ -126,8 +126,8 @@ for folder in (folder for folder in dirs if ((folder != 'log.txt') and (folder !
             print("windows")
             print(windows)
             lfp_averages=numpy.array(lfp_averages)
-            np.save(analyzed_path_for_folder +'/lfp_averages_probe_{:g}_shank_{:g}.npy'.format(probe,shank), lfp_averages) # save averages as npy folder, use combining_graphs script for combining the result of several recordings
-            np.save(analyzed_path_for_folder +'/evoked_window_peak_errs_probe_{:g}_shank_{:g}.npy'.format(probe,shank), evoked_window_peak_errs) # save errors
-            save_file = analyzed_path_for_folder + '/probe_{:g}_shank_{:g}/probe_{:g}_shank_{:g}_window_LFP.pickle'.format(probe,shank,probe,shank)
+            np.save(analyzed_path_for_folder +'/lfp_averages_probe_{:g}_group_{:g}.npy'.format(probe,shank), lfp_averages) # save averages as npy folder, use combining_graphs script for combining the result of several recordings
+            np.save(analyzed_path_for_folder +'/evoked_window_peak_errs_probe_{:g}_group_{:g}.npy'.format(probe,shank), evoked_window_peak_errs) # save errors
+            save_file = analyzed_path_for_folder + '/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}_window_LFP.pickle'.format(probe,shank,probe,shank)
             pickle.dump({'evoked_window_avgs':evoked_window_avgs, 'evoked_window_err':evoked_window_err}, open(save_file, 'wb'), protocol = -1)
             evoked_window_peak_errs[probe][shank][trode][window] = min_error
