@@ -1,6 +1,8 @@
 #this script was used only for tests 18/11/2017, Mozdas
 #this part was written by Mehmet Ozdas for Mac (based on Baran Yasar's scripts)
 #the only difference for Mac was adding  to dirs list (folder != '.DS_Store')
+
+
 import numpy as np
 import pickle
 import os
