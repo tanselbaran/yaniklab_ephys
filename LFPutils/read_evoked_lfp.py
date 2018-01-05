@@ -28,13 +28,13 @@ def extract_stim_timestamps(stim):
 def extract_stim_timestamps_der(stim):
     stim_diff = np.diff(stim)
     stim_timestamps = np.where(stim_diff > 0)[0]
-    return stim_timestamps
 
-def read_evoked_lfp_from_stim_timestamps(filtered_data, stim_timestamps, p):
     #Cutting the triggers that happen too close to the beginning or the end of the recording session
     stim_timestamps = stim_timestamps[(stim_timestamps > (stim_timestamps[0] + p['cut_beginning']*p['sample_rate']))]
     stim_timestamps = stim_timestamps[(stim_timestamps < (stim_timestamps[-1]-p['cut_end']*p['sample_rate']))]
+    return stim_timestamps
 
+def read_evoked_lfp_from_stim_timestamps(filtered_data, stim_timestamps, p):
 	#Saving the evoked LFP waveforms in an array
     evoked = np.zeros((len(stim_timestamps), len(filtered_data), int(p['sample_rate']*(p['evoked_pre']+p['evoked_post']))))
     for i in tqdm(range(len(stim_timestamps))):
