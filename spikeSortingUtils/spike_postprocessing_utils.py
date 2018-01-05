@@ -43,8 +43,10 @@ def retain_cluster_info(probe,group,p):
     fil = bandpassFilter(rate=p['sample_rate'], low=p['low_cutoff'], high=p['high_cutoff'], order=3, axis = 0)
     raw_data_f = fil(raw_data)
     units = {}
-
-    for cluster in range(nr_of_clusters+1):
+    
+    unit_indices = np.unique(np_clu)
+    unit_indices = np.delete(unit_indices, [0,1])
+    for cluster in unit_indices:
         spike_times_cluster_index = np.where(np_clu == cluster)
         spike_times_cluster = np_all_spiketimes[spike_times_cluster_index]
         num_spikes_in_cluster = len(spike_times_cluster)
