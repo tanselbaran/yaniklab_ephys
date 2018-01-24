@@ -106,3 +106,11 @@ def load_probe_info(probe):
         probe_info['id'] = id
 
     return probe_info
+
+def load_custom_probe(num_channels):
+    probe_info = {}
+    probe_info['name'] = 'custom'
+    probe_info['nr_of_groups'] = 1
+    probe_info['nr_of_electrodes'] = num_channels
+    probe_info['nr_of_electrodes_per_group'] = num_channels
+    return probe_info

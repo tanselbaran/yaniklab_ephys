@@ -35,6 +35,8 @@ def main(p):
         nr_of_groups = p['nr_of_tetrodes']
     elif p['probe_type'] == 'linear':
         nr_of_groups = p['shanks']
+    elif p['probe_type'] == 'custom':
+        nr_of_groups = 1
 
 ########Read out and Analysis################
     for probe in range(p['probes']):

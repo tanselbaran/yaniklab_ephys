@@ -61,6 +61,8 @@ def create_prb_file(probe,s,p):
             print('channel_groups = {}'.format(channel_groups), file = text)
     elif p['probe_type'] == 'linear':
         copyfile('./prb_files/' + p['probe_name'] + '.prb', file_dir) #for the linear probes, just copy the probe file downloaded from the repository for the Neuronexus probe files
+    elif p['probe_type'] == 'custom':
+        copyfile(p['mainpath'] + '/' + p['prb_file_name'])
 
 def do_klusta(probe,s,p):
     """
