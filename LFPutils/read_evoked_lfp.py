@@ -15,33 +15,33 @@ from matplotlib.pyplot import *
 from utils.OpenEphys import *
 from tqdm import tqdm
 import pickle
+import h5py
 
-def extract_stim_timestamps(stim):
-    stim_timestamps = [] #numpy array that contains the stimulus timestamps
-		#Saving the timestamps where digital input turns from 0 to 1
-    for i in tqdm(range(1,len(stim))):
-        if stim[i-1] == 0 and stim[i] != 1:
-            stim_timestamps = np.append(stim_timestamps, i)
-    stim_timestamps = np.asarray(stim_timestamps)
-    return stim_timestamps
-
-def extract_stim_timestamps_der(stim, p):
+def extract_stim_timestamps_der(stim, experiment):
     stim_diff = np.diff(stim)
     stim_timestamps = np.where(stim_diff > 0)[0]
 
     #Cutting the triggers that happen too close to the beginning or the end of the recording session
-    stim_timestamps = stim_timestamps[(stim_timestamps > (stim_timestamps[0] + p['cut_beginning']*p['sample_rate']))]
-    stim_timestamps = stim_timestamps[(stim_timestamps < (stim_timestamps[-1]-p['cut_end']*p['sample_rate']))]
+    stim_timestamps = stim_timestamps[(stim_timestamps > (experiment.cut_beginning*experiment.sample_rate))]
+    stim_timestamps = stim_timestamps[(stim_timestamps < (len(stim) - experiment.cut_end*experiment.sample_rate))]
+
     return stim_timestamps
 
-def read_evoked_lfp_from_stim_timestamps(filtered_data, stim_timestamps, p):
+def read_evoked_lfp_from_stim_timestamps(filtered_data, stim_timestamps,  experiment, mode):
+    if mode == 'whisker':
+        evoked_pre = experiment.whisker_evoked_pre
+        evoked_post = experiment.whisker_evoked_post
+    elif mode == 'light':
+        evoked_pre = experiment.light_evoked_pre
+        evoked_post = experiment.light_evoked_post
+
 	#Saving the evoked LFP waveforms in an array
-    evoked = np.zeros((len(stim_timestamps), len(filtered_data), int(p['sample_rate']*(p['evoked_pre']+p['evoked_post']))))
-    for i in tqdm(range(len(stim_timestamps))):
-        evoked[i,:,:] = filtered_data[:,int(stim_timestamps[i]-p['evoked_pre']*p['sample_rate']):int(stim_timestamps[i]+p['evoked_post']*p['sample_rate'])]
+    evoked = np.zeros((len(stim_timestamps), len(filtered_data), int(experiment.sample_rate*(evoked_pre + evoked_post))))
+    for i in (range(len(stim_timestamps))):
+        evoked[i,:,:] = filtered_data[:,int(stim_timestamps[i]-evoked_pre*experiment.sample_rate):int(stim_timestamps[i]+evoked_post*experiment.sample_rate)]
     return evoked
 
-def read_evoked_lfp(probe,group,p,data):
+def read_evoked_lfp(group, session ,data):
     """This function processes the data traces for the specified probe and shank in a recording session to obtain
 	the mean evoked LFP activity. It saves the evoked activity and the average evoked activity in a Pickle file. It
 	supports the data from 'file per channel' (dat) and 'file per recording' (rhd) options of Intan software and the
@@ -59,33 +59,40 @@ def read_evoked_lfp(probe,group,p,data):
 		of samples in the evoked LFP window) and the time stamps of the stimulus trigger events in a pickle file saved in the folder
 		for the particular probe and shank of the analysis.
     """
-    print('#### Low-pass and notch filtering the data ####')
-
-    nr_of_electrodes = p['nr_of_electrodes_per_group']
-    save_file = p['path'] + '/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}_evoked.pickle'.format(probe,group,probe,group)
+    experiment = session.subExperiment.experiment
+    probe = experiment.probe
+    nr_of_electrodes = probe.nr_of_electrodes_per_group
+    f = h5py.File(experiment.dir + '/analysis_results.hdf5', 'a')
 
     #Low pass filtering
-    filt = lowpassFilter(rate = p['sample_rate'], high = p['low_pass_freq'], order = 3, axis = 1)
+    filt = lowpassFilter(rate = experiment.sample_rate, high = experiment.low_pass_freq, order = 3, axis = 1)
     filtered = filt(data)
 
     #Notch filtering
-    if p['notch_filt_freq'] != 0:
-        notchFilt = notchFilter(rate = p['sample_rate'], low = p['notch_filt_freq']-5, high = p['notch_filt_freq']+5, order = 3, axis = 1)
+    if experiment.notch_filt_freq != 0:
+        notchFilt = notchFilter(rate = experiment.sample_rate, low = experiment.notch_filt_freq-5, high = experiment.notch_filt_freq+5, order = 3, axis = 1)
         filtered = notchFilt(filtered)
-
-    #filtered = np.transpose(filtered)
 
     #Reading the trigger timestamps (process varies depending on the file format
 
-    if p['fileformat'] == 'dat':
-        trigger_filepath =  p['path'] + '/' + p['stim_file']
-        with open(trigger_filepath, 'rb') as fid:
-            trigger = np.fromfile(fid, np.int16)
-        stim_timestamps = extract_stim_timestamps_der(trigger,p)
+    if experiment.fileformat == 'dat':
+        if session.preferences['do_whisker_stim_evoked'] == 'y':
+            whisker_trigger_filepath = session.whisker_stim_channel
+            with open(whisker_trigger_filepath, 'rb') as fid:
+                whisker_stim_trigger = np.fromfile(fid, np.int16)
+                whisker_stim_timestamps = extract_stim_timestamps_der(whisker_stim_trigger,experiment)
+                f[session.subExperiment.name + '/group_{:g}/'.format(group) + session.name].create_dataset("whisker_stim_timestamps", data = whisker_stim_timestamps)
 
-    elif p['fileformat'] == 'cont':
+        if session.preferences['do_optical_stim_evoked'] == 'y':
+            optical_trigger_filepath = session.optical_stim_channel
+            with open(optical_trigger_filepath, 'rb') as fid:
+                optical_stim_trigger = np.fromfile(fid, np.int16)
+                optical_stim_timestamps = extract_stim_timestamps_der(optical_stim_trigger, experiment)
+                f[session.subExperiment.name + '/group_{:g}/'.format(group) + session.name].create_dataset("optical_stim_timestamps", data  = optical_stim_timestamps)
+
+    elif experiment.fileformat == 'cont':
 		#Reading the digital input from file
-        trigger_filepath = p['path'] + '/all_channels.events'
+        trigger_filepath = session.dir + '/all_channels.events'
         trigger_events = loadEvents(trigger_filepath)
 
         #Acquiring the timestamps of the ttl pulses
@@ -106,10 +113,10 @@ def read_evoked_lfp(probe,group,p,data):
 
         stim_timestamps = timestamps_ttl - timestamps_global[0]
 
-    elif p['fileformat'] == 'rhd':
+    elif experiment.fileformat == 'rhd':
         trigger_all = []
-        for file in range(len(p['rhd_file'])):
-            data = read_data(p['path']+'/'+ p['rhd_file'][file])
+        for file in range(session.rhd_files):
+            data = read_data(session.dir+'/'+ session.rhd_files[file])
             trigger = data['board_dig_in_data'][1]
             trigger_all = np.append(trigger_all, trigger)
 
@@ -118,6 +125,9 @@ def read_evoked_lfp(probe,group,p,data):
             if trigger_all[i-1] == 0 and trigger_all[i] == 1:
                 stim_timestamps = np.append(stim_timestamps, i)
 
-    evoked = read_evoked_lfp_from_stim_timestamps(filtered, stim_timestamps, p)
-    #Save all evoked activity in a pickle file
-    pickle.dump({'evoked':evoked, 'stim_timestamps':stim_timestamps}, open(save_file, 'wb'), protocol=-1)
+    if session.preferences['do_whisker_stim_evoked'] == 'y':
+        whisker_evoked = read_evoked_lfp_from_stim_timestamps(filtered, whisker_stim_timestamps, experiment, 'whisker')
+        f[session.subExperiment.name + '/group_{:g}/'.format(group) + session.name].create_dataset("whisker_evoked_LFP", data = whisker_evoked)
+    if session.preferences['do_optical_stim_evoked'] == 'y':
+        optical_evoked = read_evoked_lfp_from_stim_timestamps(filtered, optical_stim_timestamps, experiment, 'light')
+        f[session.subExperiment.name + '/group_{:g}/'.format(group) + session.name].create_dataset("optical_evoked_LFP", data = optical_evoked)
