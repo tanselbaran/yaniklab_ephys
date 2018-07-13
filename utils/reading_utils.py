@@ -47,7 +47,7 @@ def read_time_dat_file(filepath, sample_rate):
     time_file = raw_array / float(sample_rate) #converting from int32 to seconds
     return time_file
 
-def read_group(probe,s,p):
+def read_group(group,session):
     """
     This function reads the data for a given tetrode or the shank of a linear probe for a recording session and returns it as an array. It supports 'file_per_channel' ('dat') and 'file_per_recording' ('rhd') options of the Intan software and data from Open Ephys software ('cont'). It also saves this array in a .dat file in case spike sorting will be performed.
 
@@ -62,62 +62,69 @@ def read_group(probe,s,p):
     The function also generates a .dat file that contains the data for the tetrode in the format of ch0[t=0], ch1[t=0], ch2[t=0], ch3[t=0], ch0[t=1], ch1[t=1] etc.
 
     """
-    id = probe * p['nr_of_electrodes'] + p['id'].astype(int) #Reading the channel id file from the parameters dictionary
+    experiment = session.subExperiment.experiment
+    probe = experiment.probe
+    id = probe.id.astype('int') #Reading the channel id file from the parameters dictionary
     #If not exists, create a folder where the analysis files for the entire experiment would be stored for klusta purposes
-    if not os.path.exists(p['mainpath'] + '/analysis_files'):
-        os.mkdir(p['mainpath'] + '/analysis_files')
+    if not os.path.exists(session.subExperiment.dir + '/analysis_files'):
+        os.mkdir(session.subExperiment.dir + '/analysis_files')
 
-    if p['fileformat'] == 'dat' or p['fileformat'] == 'cont':
+    if experiment.fileformat == 'dat' or experiment.fileformat == 'cont':
         #If not exists, create a dictionary for the intermediate files for the channel group (shank or tetrode)
-        if not os.path.exists(p['path'] + '/probe_{:g}_group_{:g}'.format(probe,s)):
-            os.mkdir(p['path'] + '/probe_{:g}_group_{:g}'.format(probe,s))
+        if not os.path.exists(session.subExperiment.dir + '/analysis_files/group_{:g}'.format(group)):
+            os.mkdir(session.subExperiment.dir + '/analysis_files/group_{:g}'.format(group))
 
         #Read the first electrode in the tetrode or shank to have a definite length for the group file array
-        if p['fileformat'] == 'dat':
+        if experiment.fileformat == 'dat':
             #For the "channel per file" option of Intan
-            info = read_data(p['path'] + '/info.rhd')
-            electrode0_path = p['path'] + '/amp-' +  str(info['amplifier_channels'][int(id[0,s])]['native_channel_name']) + '.dat'
+            if id[0,group] < 10:
+                prefix = '00'
+            else:
+                prefix = '0'
+            electrode0_path = session.dir + '/amp-' + session.subExperiment.amplifier_port + '-' +prefix + str(id[0,group]) + '.dat'
             electrode0 = read_amplifier_dat_file(electrode0_path)
         else:
             #For the OpenEphys files
-            electrode0_path = p['path'] + '/100_CH' + str(id[0,s] + 1) + '.continuous'
+            electrode0_path = session.dir+ '/100_CH' + str(id[0,s] + 1) + '.continuous'
             electrode0_dict = OpenEphys.load(electrode0_path)
             electrode0 = electrode0_dict['data']
 
         #Reading the rest of the electrodes in the tetrode or the shank
 
-        group_file = np.zeros((p['nr_of_electrodes_per_group'], len(electrode0))) #Create  the array of the group file
+        group_file = np.zeros((probe.nr_of_electrodes_per_group, len(electrode0))) #Create  the array of the group file
         group_file[0] = electrode0
-        for trode in range(1,p['nr_of_electrodes_per_group']):
-            if p['fileformat'] == 'dat':
+        for trode in range(1,probe.nr_of_electrodes_per_group):
+            if experiment.fileformat == 'dat':
                 #For the "channel per file" option of Intan
-                electrode_path = p['path'] + '/amp-' + str(info['amplifier_channels'][int(id[trode,s])]['native_channel_name']) + '.dat'
+                if id[trode,group] < 10:
+                    prefix = '00'
+                else:
+                    prefix = '0'
+                electrode_path = session.dir + '/amp-' + session.subExperiment.amplifier_port + '-' + prefix +str(id[trode,group]) + '.dat'
                 group_file[trode] = read_amplifier_dat_file(electrode_path)
             else:
                 #For the OpenEphys files
-                electrode_path = p['path'] + '/100_CH' + str(id[trode,s] + 1) + '.continuous'
+                electrode_path = session.dir + '/100_CH' + str(id[trode,group] + 1) + '.continuous'
                 electrode_dict = OpenEphys.load(electrode_path)
                 group_file[trode] = electrode_dict['data']
 
-    #Reading out the data for the "file per recording" option of Intan
-    elif p['fileformat'] == 'rhd':
-        group_file = np.zeros((p['nr_of_electrodes_per_group'],0))
-        for sample in range(len(p['rhd_file'])):
-            data = read_data(p['path']+'/'+ p['rhd_file'][sample])
+                #Reading out the data for the "file per recording" option of Intan
+    elif experiment.fileformat == 'rhd':
+        group_file = np.zeros((probe.nr_of_electrodes_per_group,0))
+        for sample in range(len(session.rhd_files)):
+            data = read_data(session.dir+'/'+ p['rhd_file'][sample])
             electrode_inds = []
-            for trode in range(p['nr_of_electrodes_per_group']):
-                electrode_inds = np.append(electrode_inds, id[trode,s])
+            for trode in range(probe.nr_of_electrodes_per_group):
+                electrode_inds = np.append(electrode_inds, id[trode,group])
             electrode_inds = electrode_inds.astype(int)
             group_file = np.append(group_file, data['amplifier_data'][electrode_inds], 0)
 
     #Writing the data into the .dat file if spike sorting will be performed.
-    if p['spikeSorting']:
-        if not os.path.exists(p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}'.format(probe,s)):
-            os.mkdir(p['mainpath'] + '/analysis_files/probe_{:g}_group_{:g}'.format(probe,s))
-        if p['order'] == 0:
-            fid_write = open(p['mainpath'] +'/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.dat'.format(probe,s,probe,s), 'w')
+    if session.subExperiment.preferences['do_spike_analysis'] == 'y':
+        if session.order == 0:
+            fid_write = open(session.subExperiment.dir +'/analysis_files/group_{:g}/group_{:g}.dat'.format(group, group), 'w')
         else:
-            fid_write = open(p['mainpath'] +'/analysis_files/probe_{:g}_group_{:g}/probe_{:g}_group_{:g}.dat'.format(probe,s,probe,s), 'a')
+            fid_write = open(session.subExperiment.dir +'/analysis_files/group_{:g}/group_{:g}.dat'.format(group, group), 'a')
         group_file_to_save = group_file.transpose().round().astype('int16')
         group_file_to_save.tofile(fid_write)
         fid_write.close()
