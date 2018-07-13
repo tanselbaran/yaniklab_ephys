@@ -1,3 +1,5 @@
+import importlib
+
 class Probe:
     def __init__(self, probe_name):
         self.name = probe_name
