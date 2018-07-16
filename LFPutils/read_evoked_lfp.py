@@ -25,7 +25,7 @@ def extract_stim_timestamps(stim):
     stim_timestamps = np.asarray(stim_timestamps)
     return stim_timestamps
 
-def extract_stim_timestamps_der(stim,p):
+def extract_stim_timestamps_der(stim, p):
     stim_diff = np.diff(stim)
     stim_timestamps = np.where(stim_diff > 0)[0]
 
