@@ -25,7 +25,7 @@ def extract_stim_timestamps(stim):
     stim_timestamps = np.asarray(stim_timestamps)
     return stim_timestamps
 
-def extract_stim_timestamps_der(stim):
+def extract_stim_timestamps_der(stim, p):
     stim_diff = np.diff(stim)
     stim_timestamps = np.where(stim_diff > 0)[0]
 
@@ -81,7 +81,7 @@ def read_evoked_lfp(probe,group,p,data):
         trigger_filepath =  p['path'] + '/' + p['stim_file']
         with open(trigger_filepath, 'rb') as fid:
             trigger = np.fromfile(fid, np.int16)
-        stim_timestamps = extract_stim_timestamps_der(trigger)
+        stim_timestamps = extract_stim_timestamps_der(trigger,p)
 
     elif p['fileformat'] == 'cont':
 		#Reading the digital input from file

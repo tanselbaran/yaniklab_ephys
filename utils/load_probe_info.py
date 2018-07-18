@@ -106,3 +106,17 @@ def load_probe_info(probe):
         probe_info['id'] = id
 
     return probe_info
+
+def load_custom_probe(channel_groups):
+    channels = channel_groups[0]['channels']
+    channels = np.asarray(channels)
+
+    probe_info = {}
+    probe_info['name'] = 'custom'
+    probe_info['nr_of_groups'] = 1
+    probe_info['numTrodes'] = len(channels)
+    probe_info['nr_of_electrodes_per_group'] = len(channels)
+    probe_info['numShanks'] = 1
+    probe_info['type'] = 'custom'
+    probe_info['id'] = np.reshape(channels, (len(channels), 1))
+    return probe_info
